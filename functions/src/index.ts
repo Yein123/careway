@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import { setGlobalOptions } from 'firebase-functions/v2';
-import { onCall } from 'firebase-functions/v2/https';
+import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { db } from './db';
 import { requireAuth } from './errors';
@@ -10,6 +11,11 @@ import { expireOffersLogic } from './booking/expire';
 import { payBookingLogic } from './booking/pay';
 import { cancelBookingLogic } from './booking/cancel';
 import { lockGroupsLogic } from './booking/lock';
+import { advanceStepLogic, submitSummaryLogic } from './booking/steps';
+import { requestDeliveryLogic } from './delivery/request';
+import { payDeliveryLogic } from './delivery/pay';
+import { progressDeliveriesLogic } from './delivery/progress';
+import { seedDemoLogic } from './seed';
 
 initializeApp();
 setGlobalOptions({ region: 'asia-southeast1' });
@@ -30,4 +36,23 @@ export const cancelBooking = onCall((req) => cancelBookingLogic(db(), requireAut
 
 export const lockGroups = onSchedule({ schedule: 'every 5 minutes', timeZone: 'Asia/Kuala_Lumpur' }, async () => {
   await lockGroupsLogic(db(), new Date());
+});
+
+export const advanceStep = onCall((req) => advanceStepLogic(db(), requireAuth(req.auth), req.data, new Date()));
+
+export const submitSummary = onCall((req) => submitSummaryLogic(db(), requireAuth(req.auth), req.data, new Date()));
+
+export const requestDelivery = onCall((req) => requestDeliveryLogic(db(), requireAuth(req.auth), req.data, new Date()));
+
+export const payDelivery = onCall((req) => payDeliveryLogic(db(), requireAuth(req.auth), req.data, new Date()));
+
+export const progressDeliveries = onSchedule({ schedule: 'every 1 minutes', timeZone: 'Asia/Kuala_Lumpur' }, async () => {
+  await progressDeliveriesLogic(db(), new Date());
+});
+
+/** Demo data: emulator only, or a caller with the `admin` custom claim. */
+export const seedDemo = onCall((req) => {
+  const allowed = process.env.FUNCTIONS_EMULATOR === 'true' || req.auth?.token?.admin === true;
+  if (!allowed) throw new HttpsError('permission-denied', 'Demo data can only be loaded in the emulator.');
+  return seedDemoLogic(db(), getAuth(), new Date());
 });
