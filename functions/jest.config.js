@@ -4,4 +4,5 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/test'],
   testTimeout: 30000,
+  moduleNameMapper: { '^jose$': '<rootDir>/test/stubs/jose.js' },
 };
