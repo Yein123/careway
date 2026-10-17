@@ -3,7 +3,7 @@ import { Firestore } from 'firebase-admin/firestore';
 import { ts } from '../db';
 import { denied, fail } from '../errors';
 import { notifyTx } from '../notify';
-import { isExpired, offerNext, payLink, PAY_TTL_MS, TargetCol } from './offers';
+import { accessRef, isExpired, offerNext, payLink, PAY_TTL_MS, TargetCol } from './offers';
 
 export async function respondToOfferLogic(
   db: Firestore,
@@ -52,6 +52,9 @@ export async function respondToOfferLogic(
       currentOfferId: null,
       offerExpiresAt: null,
     });
+    if (col === 'bookings') {
+      tx.set(accessRef(db, target.familyId, target.patientId, uid), { bookingId: targetId, createdAt: ts(now) });
+    }
     if (groupRef && group) {
       const payBy = ts(new Date(now.getTime() + PAY_TTL_MS));
       const update: Record<string, unknown> = {};

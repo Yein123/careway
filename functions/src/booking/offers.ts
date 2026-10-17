@@ -108,6 +108,11 @@ export async function offerNext(db: Firestore, col: TargetCol, id: string, now: 
   });
 }
 
+/** Patient-profile read access for the assigned caregiver (see firestore.rules). */
+export function accessRef(db: Firestore, familyId: string, patientId: string, caregiverId: string) {
+  return db.doc(`families/${familyId}/patients/${patientId}/access/${caregiverId}`);
+}
+
 export function isExpired(expiresAt: unknown, now: Date): boolean {
   const d = toDate(expiresAt);
   return !d || d.getTime() <= now.getTime();

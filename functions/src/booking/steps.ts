@@ -4,6 +4,7 @@ import { toDate, ts } from '../db';
 import { denied, fail } from '../errors';
 import { notifyTx } from '../notify';
 import { escortFinalSen, PRIVATE_RIDE_SEN } from '../domain/pricing';
+import { accessRef } from './offers';
 
 export const GROUP_STEPS = ['picked_up', 'registered', 'with_doctor', 'pharmacy', 'ride_home', 'home'];
 export const PERSONAL_STEPS = ['picked_up', 'registered', 'waiting_doctor', 'with_doctor', 'pharmacy', 'ride_home', 'home'];
@@ -39,6 +40,7 @@ export async function advanceStepLogic(db: Firestore, uid: string, raw: unknown,
     if (last) {
       update.status = 'completed';
       update.completedAt = ts(now);
+      tx.delete(accessRef(db, b.familyId, b.patientId, uid));
       if (b.level === 2 && steps.length > 0) {
         // Charged by actual time: refund the difference when shorter than the estimate.
         const started = toDate(steps[0].at)!;

@@ -63,6 +63,7 @@ describeEmu('visit steps and summary', () => {
     const b = await bookingOf(db, id);
     expect(b.status).toBe('completed');
     expect(b.summary.writtenBy).toBe('Nurul');
+    expect((await db.doc('families/f1/patients/p1/access/nurul').get()).exists).toBe(false);
   });
 
   test('a shorter level 2 visit is refunded at completion', async () => {

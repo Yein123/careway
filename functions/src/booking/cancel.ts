@@ -5,6 +5,7 @@ import { fail } from '../errors';
 import { notify, notifyTx } from '../notify';
 import { cancelOutcome, GroupPackage } from '../domain/pricing';
 import { assertFamilyMember } from './pay';
+import { accessRef } from './offers';
 
 const CANCELLABLE = ['draft', 'pending_caregiver', 'awaiting_payment', 'confirmed', 'not_matched'];
 
@@ -87,6 +88,7 @@ export async function cancelBookingLogic(
       }
     }
     if (b.caregiverId) {
+      tx.delete(accessRef(db, b.familyId, b.patientId, b.caregiverId));
       notifyTx(tx, db, b.caregiverId, {
         type: 'cancelled',
         title: 'Visit cancelled',

@@ -2,7 +2,7 @@
 import { Firestore } from 'firebase-admin/firestore';
 import { toDate, ts } from '../db';
 import { notifyTx } from '../notify';
-import { isExpired, offerNext, PAY_TTL_MS, TargetCol, withoutHold } from './offers';
+import { accessRef, isExpired, offerNext, PAY_TTL_MS, TargetCol, withoutHold } from './offers';
 
 export async function expireOffersLogic(db: Firestore, now: Date): Promise<{ offers: number; unpaid: number }> {
   let offers = 0;
@@ -45,6 +45,7 @@ export async function expireOffersLogic(db: Firestore, now: Date): Promise<{ off
           link: col === 'deliveries' ? `/delivery/${d.id}` : `/booking/${d.id}`,
         }, now);
         if (t.caregiverId) {
+          if (col === 'bookings') tx.delete(accessRef(db, t.familyId, t.patientId, t.caregiverId));
           notifyTx(tx, db, t.caregiverId, {
             type: 'released',
             title: 'Job released',

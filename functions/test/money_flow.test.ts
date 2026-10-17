@@ -149,6 +149,8 @@ describeEmu('payment, cancellation and settlement', () => {
     await payBookingLogic(db, 'g1', { bookingId: cId, method: 'fpx', package: 'saver' }, NOW);
     const cancel = await cancelBookingLogic(db, 'g1', { bookingId: cId }, NOW);
     expect(cancel).toEqual({ status: 'cancelled', refundSen: 2200, creditSen: 0 });
+    expect((await db.doc('families/f1/patients/p4/access/farid').get()).exists).toBe(false);
+    expect((await db.doc('families/f1/patients/p1/access/farid').get()).exists).toBe(true);
     const g0 = (await db.doc(`groups/${a.groupId}`).get()).data()!;
     expect(g0.riderBookingIds).toHaveLength(2);
     await lockGroupsLogic(db, new Date(toDate(g0.lockAt)!.getTime() + MIN));

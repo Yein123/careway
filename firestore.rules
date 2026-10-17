@@ -1,8 +1,97 @@
 rules_version = '2';
+
+// CareWay security rules (spec §8). Anything involving another user's data,
+// money or time is written by Cloud Functions (Admin SDK bypasses these rules).
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isFamilyMember(fid) {
+      return signedIn() && fid != null
+        && request.auth.uid in get(/databases/$(database)/documents/families/$(fid)).data.memberUids;
+    }
+
+    function onlyChanges(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    match /users/{uid} {
+      allow read: if isSelf(uid);
+      allow create: if isSelf(uid) && request.resource.data.role == 'guardian';
+      // Role never changes from the client. familyId may only be set once, to a
+      // family this user administers (created in the same batch).
+      allow update: if isSelf(uid)
+        && request.resource.data.role == resource.data.role
+        && (
+          request.resource.data.get('familyId', null) == resource.data.get('familyId', null)
+          || (resource.data.get('familyId', null) == null
+              && getAfter(/databases/$(database)/documents/families/$(request.resource.data.familyId)).data.adminUid == uid)
+        );
+
+      match /notifications/{nid} {
+        allow read: if isSelf(uid);
+        allow update: if isSelf(uid) && onlyChanges(['read']);
+      }
+    }
+
+    match /caregivers/{uid} {
+      allow read: if isSelf(uid);
+      allow update: if isSelf(uid) && onlyChanges(['onDuty']);
+    }
+
+    match /families/{fid} {
+      allow read: if isFamilyMember(fid);
+      allow create: if signedIn()
+        && request.resource.data.adminUid == request.auth.uid
+        && request.resource.data.memberUids == [request.auth.uid];
+      allow update: if isFamilyMember(fid)
+        && request.resource.data.adminUid == resource.data.adminUid
+        && request.resource.data.memberUids == resource.data.memberUids;
+
+      match /patients/{pid} {
+        // Assigned caregivers get an access doc from functions while their
+        // visit is active; removed when it completes or is cancelled.
+        allow read: if isFamilyMember(fid)
+          || (signedIn() && exists(/databases/$(database)/documents/families/$(fid)/patients/$(pid)/access/$(request.auth.uid)));
+        allow write: if isFamilyMember(fid);
+
+        match /access/{cgUid} {
+          allow read: if isFamilyMember(fid);
+        }
+      }
+    }
+
+    match /bookings/{bid} {
+      allow read: if isFamilyMember(resource.data.familyId) || isSelf(resource.data.caregiverId);
+      allow update: if isFamilyMember(resource.data.familyId)
+        && resource.data.status == 'completed'
+        && onlyChanges(['rating']);
+    }
+
+    match /deliveries/{did} {
+      allow read: if isFamilyMember(resource.data.familyId) || isSelf(resource.data.caregiverId);
+      allow update: if isFamilyMember(resource.data.familyId)
+        && resource.data.status == 'delivered'
+        && onlyChanges(['rating']);
+    }
+
+    match /offers/{oid} {
+      allow read: if isSelf(resource.data.caregiverId);
+    }
+
+    match /groups/{gid} {
+      allow read: if signedIn();
+    }
+
+    match /receipts/{rid} {
+      allow read: if isSelf(resource.data.uid) || isFamilyMember(resource.data.familyId);
     }
   }
 }

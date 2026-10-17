@@ -86,6 +86,7 @@ describeEmu('booking request and offers', () => {
     expect(b.status).toBe('awaiting_payment');
     expect(b.caregiverId).toBe('nurul');
     expect(b.caregiverName).toBe('Nurul');
+    expect((await db.doc('families/f1/patients/p1/access/nurul').get()).exists).toBe(true);
     const notes = await db.collection('users/g1/notifications').get();
     expect(notes.docs.some((d) => String(d.data().title).includes('Nurul'))).toBe(true);
   });
@@ -118,6 +119,7 @@ describeEmu('booking request and offers', () => {
     await respondToOfferLogic(db, 'nurul', { offerId: first.id, accept: true }, NOW);
     await expireOffersLogic(db, new Date(NOW.getTime() + 31 * MIN));
     expect((await bookingOf(db, r.bookingId)).status).toBe('expired');
+    expect((await db.doc('families/f1/patients/p1/access/nurul').get()).exists).toBe(false);
   });
 });
 
