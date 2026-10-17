@@ -1,1 +1,24 @@
+# Plan workspace
 .superpowers/
+
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+*.iml
+.idea/
+.vscode/
+.DS_Store
+
+# Android
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Firebase
+*-debug.log
+.firebase/
