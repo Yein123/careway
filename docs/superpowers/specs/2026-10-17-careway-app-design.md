@@ -86,7 +86,7 @@ Payment happens **only after a caregiver accepts**, so a failed request is never
 | add-on "Language help (X)" | languages contains X |
 | always | cert `firstAid` |
 
-Level 1 never includes lifting/toilet help (design copy); a Level 1 booking with mobility `transfer` is blocked in Choose help and Level 2 is suggested.
+Level 1 package and add-ons are chosen after the group helper accepts (design order), so Level 1 matching uses level, mobility and age only; the package screen offers only the add-ons (and languages) the accepted helper can do, and payment re-validates this. Level 1 never includes lifting/toilet help (design copy); a Level 1 booking with mobility `transfer` is blocked in Choose help and Level 2 is suggested.
 
 ### Matching (`functions: matchCaregivers`)
 1. **Hard filter:** all required skills; all required certs `verified` and `expiresAt` after the appointment; `onDuty`; zone matches; no schedule overlap with accepted bookings or open offers (appointment ±3h window for Level 2, group trip window for Level 1).
