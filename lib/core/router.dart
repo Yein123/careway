@@ -22,6 +22,8 @@ import '../features/family/patient_profile_screen.dart';
 import '../features/onboarding/get_started_screen.dart';
 import '../features/onboarding/welcome_screen.dart';
 import '../features/shell/shells.dart';
+import '../features/visits/live_visit_screen.dart';
+import '../features/visits/visits_screen.dart';
 
 const publicRoutes = {'/', '/start', '/signin', '/cg/signin'};
 
@@ -82,6 +84,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'not-found', builder: (_, s) => NotFoundScreen(bookingId: s.pathParameters['id']!)),
           GoRoute(path: 'pay', builder: (_, s) => PaymentScreen(bookingId: s.pathParameters['id']!)),
           GoRoute(path: 'confirmed', builder: (_, s) => ConfirmedScreen(bookingId: s.pathParameters['id']!)),
+          GoRoute(path: 'live', builder: (_, s) => LiveVisitScreen(bookingId: s.pathParameters['id']!)),
         ],
       ),
       GoRoute(
@@ -98,10 +101,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(
-                path: '/visits',
-                builder: (_, _) => const PlaceholderTab('Visits'),
-              ),
+              GoRoute(path: '/visits', builder: (_, _) => const VisitsScreen()),
             ],
           ),
           StatefulShellBranch(
