@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'models/booking.dart';
 import 'models/caregiver.dart';
 import 'models/family.dart';
 import 'models/notification.dart';
@@ -84,3 +85,19 @@ final notificationsProvider = StreamProvider<List<AppNotification>>((ref) {
   if (uid == null) return Stream.value(const []);
   return ref.watch(notificationRepoProvider).watch(uid);
 });
+
+final patientProvider = StreamProvider.family<Patient?, String>((ref, pid) {
+  final fid = ref.watch(familyIdProvider);
+  if (fid == null) return Stream.value(null);
+  return ref.watch(familyRepoProvider).watchPatient(fid, pid);
+});
+
+final familyBookingsProvider = StreamProvider<List<Booking>>((ref) {
+  final fid = ref.watch(familyIdProvider);
+  if (fid == null) return Stream.value(const []);
+  return ref.watch(bookingRepoProvider).watchForFamily(fid);
+});
+
+final bookingProvider = StreamProvider.family<Booking?, String>(
+  (ref, id) => ref.watch(bookingRepoProvider).watch(id),
+);

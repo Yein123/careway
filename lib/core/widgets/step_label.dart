@@ -49,7 +49,9 @@ class KeyValueRow extends StatelessWidget {
           child: Text(label, style: bold ? CwText.bodyBold : CwText.muted),
         ),
         const SizedBox(width: 12),
-        Text(value, style: bold ? CwText.h3 : CwText.bodyBold),
+        Flexible(
+          child: Text(value, textAlign: TextAlign.right, style: bold ? CwText.h3 : CwText.bodyBold),
+        ),
       ],
     ),
   );

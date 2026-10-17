@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../data/models/user.dart';
 import '../data/providers.dart';
 import '../features/auth/sign_in_screen.dart';
+import '../features/family/family_screen.dart';
+import '../features/family/patient_profile_screen.dart';
 import '../features/onboarding/get_started_screen.dart';
 import '../features/onboarding/welcome_screen.dart';
 import '../features/shell/shells.dart';
@@ -75,7 +77,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/family',
-                builder: (_, _) => const PlaceholderTab('Family'),
+                builder: (_, _) => const FamilyScreen(),
+                routes: [
+                  GoRoute(path: 'patient/new', builder: (_, _) => const NewPatientScreen()),
+                  GoRoute(
+                    path: 'patient/:pid',
+                    builder: (_, s) => PatientProfileScreen(patientId: s.pathParameters['pid']!),
+                  ),
+                ],
               ),
             ],
           ),
