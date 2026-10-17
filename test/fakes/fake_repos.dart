@@ -24,10 +24,10 @@ class Live<T> {
   final _changes = StreamController<void>.broadcast(sync: true);
 
   Stream<R> watch<R>(R Function(List<T>) select) => Stream.multi((c) {
-        c.add(select(items));
-        final sub = _changes.stream.listen((_) => c.add(select(items)));
-        c.onCancel = sub.cancel;
-      });
+    c.add(select(items));
+    final sub = _changes.stream.listen((_) => c.add(select(items)));
+    c.onCancel = sub.cancel;
+  });
 
   void set(List<T> next) {
     items
@@ -65,7 +65,9 @@ class FakeAuthRepo implements AuthRepo {
 
   @override
   Future<String> signIn(String email, String password) async {
-    if (passwords[email] != password) throw const AuthFailure('Email or password is incorrect.');
+    if (passwords[email] != password) {
+      throw const AuthFailure('Email or password is incorrect.');
+    }
     setUid('uid-$email');
     return 'uid-$email';
   }
@@ -82,6 +84,11 @@ class FakeAuthRepo implements AuthRepo {
     signOuts++;
     setUid(null);
   }
+
+  final List<String> resets = [];
+
+  @override
+  Future<void> sendPasswordReset(String email) async => resets.add(email);
 }
 
 class FakeUserRepo implements UserRepo {
@@ -91,14 +98,15 @@ class FakeUserRepo implements UserRepo {
 
   @override
   Stream<AppUser?> watch(String uid) => users.watch((l) {
-        for (final u in l) {
-          if (u.uid == uid) return u;
-        }
-        return null;
-      });
+    for (final u in l) {
+      if (u.uid == uid) return u;
+    }
+    return null;
+  });
 
   @override
-  Future<void> create(AppUser user) async => users.upsert(user, (u) => u.uid == user.uid);
+  Future<void> create(AppUser user) async =>
+      users.upsert(user, (u) => u.uid == user.uid);
 
   @override
   Future<void> update(String uid, Map<String, dynamic> fields) async {
@@ -125,54 +133,80 @@ class FakeCaregiverRepo implements CaregiverRepo {
 
   @override
   Stream<CaregiverProfile?> watch(String uid) => cgs.watch((l) {
-        for (final c in l) {
-          if (c.uid == uid) return c;
-        }
-        return null;
-      });
+    for (final c in l) {
+      if (c.uid == uid) return c;
+    }
+    return null;
+  });
 
   @override
   Future<void> setOnDuty(String uid, bool onDuty) async {
     final c = cgs.items.firstWhere((c) => c.uid == uid);
-    cgs.upsert(CaregiverProfile.fromMap(uid, {...c.toMap(), 'onDuty': onDuty}), (x) => x.uid == uid);
+    cgs.upsert(
+      CaregiverProfile.fromMap(uid, {...c.toMap(), 'onDuty': onDuty}),
+      (x) => x.uid == uid,
+    );
   }
 }
 
 class FakeFamilyRepo implements FamilyRepo {
   FakeFamilyRepo({List<Family>? families, Map<String, List<Patient>>? patients})
-      : families = Live(families),
-        patients = Live([for (final e in (patients ?? {}).entries) for (final p in e.value) (e.key, p)]);
+    : families = Live(families),
+      patients = Live([
+        for (final e in (patients ?? {}).entries)
+          for (final p in e.value) (e.key, p),
+      ]);
 
   final Live<Family> families;
   final Live<(String, Patient)> patients;
   final List<Patient> saved = [];
   int _ids = 0;
 
-  @override
-  Stream<Family?> watchFamily(String fid) => families.watch((l) {
-        for (final f in l) {
-          if (f.id == fid) return f;
-        }
-        return null;
-      });
+  /// Called with (adminUid, familyId) so the user's familyId can be linked.
+  void Function(String uid, String fid)? onFamilyCreated;
 
   @override
-  Stream<List<Patient>> watchPatients(String fid) =>
-      patients.watch((l) => [for (final (f, p) in l) if (f == fid) p]);
+  Stream<Family?> watchFamily(String fid) => families.watch((l) {
+    for (final f in l) {
+      if (f.id == fid) return f;
+    }
+    return null;
+  });
+
+  @override
+  Stream<List<Patient>> watchPatients(String fid) => patients.watch(
+    (l) => [
+      for (final (f, p) in l)
+        if (f == fid) p,
+    ],
+  );
 
   @override
   Stream<Patient?> watchPatient(String fid, String pid) => patients.watch((l) {
-        for (final (f, p) in l) {
-          if (f == fid && p.id == pid) return p;
-        }
-        return null;
-      });
+    for (final (f, p) in l) {
+      if (f == fid && p.id == pid) return p;
+    }
+    return null;
+  });
 
   @override
-  Future<String> createFamily({required String name, required String adminUid, required String adminName}) async {
+  Future<String> createFamily({
+    required String name,
+    required String adminUid,
+    required String adminName,
+  }) async {
     final id = 'fam${++_ids}';
-    families.upsert(Family(id: id, name: name, adminUid: adminUid, memberUids: [adminUid], memberNames: {adminUid: adminName}),
-        (f) => f.id == id);
+    families.upsert(
+      Family(
+        id: id,
+        name: name,
+        adminUid: adminUid,
+        memberUids: [adminUid],
+        memberNames: {adminUid: adminName},
+      ),
+      (f) => f.id == id,
+    );
+    onFamilyCreated?.call(adminUid, id);
     return id;
   }
 
@@ -194,19 +228,28 @@ class FakeBookingRepo implements BookingRepo {
   void put(Booking b) => bookings.upsert(b, (x) => x.id == b.id);
 
   @override
-  Stream<List<Booking>> watchForFamily(String fid) => bookings.watch((l) => [for (final b in l) if (b.familyId == fid) b]);
+  Stream<List<Booking>> watchForFamily(String fid) => bookings.watch(
+    (l) => [
+      for (final b in l)
+        if (b.familyId == fid) b,
+    ],
+  );
 
   @override
   Stream<Booking?> watch(String id) => bookings.watch((l) {
-        for (final b in l) {
-          if (b.id == id) return b;
-        }
-        return null;
-      });
+    for (final b in l) {
+      if (b.id == id) return b;
+    }
+    return null;
+  });
 
   @override
-  Stream<List<Booking>> watchForCaregiver(String uid) =>
-      bookings.watch((l) => [for (final b in l) if (b.caregiverId == uid) b]);
+  Stream<List<Booking>> watchForCaregiver(String uid) => bookings.watch(
+    (l) => [
+      for (final b in l)
+        if (b.caregiverId == uid) b,
+    ],
+  );
 
   @override
   Future<void> rate(String id, Rating rating) async {
@@ -221,16 +264,23 @@ class FakeGroupRepo implements GroupRepo {
   final Live<Group> groups;
 
   @override
-  Stream<List<Group>> watchForDay({required String hospitalId, required String date}) =>
-      groups.watch((l) => [for (final g in l) if (g.hospitalId == hospitalId && g.date == date) g]);
+  Stream<List<Group>> watchForDay({
+    required String hospitalId,
+    required String date,
+  }) => groups.watch(
+    (l) => [
+      for (final g in l)
+        if (g.hospitalId == hospitalId && g.date == date) g,
+    ],
+  );
 
   @override
   Stream<Group?> watch(String id) => groups.watch((l) {
-        for (final g in l) {
-          if (g.id == id) return g;
-        }
-        return null;
-      });
+    for (final g in l) {
+      if (g.id == id) return g;
+    }
+    return null;
+  });
 }
 
 class FakeOfferRepo implements OfferRepo {
@@ -238,32 +288,45 @@ class FakeOfferRepo implements OfferRepo {
   final Live<Offer> offers;
 
   @override
-  Stream<List<Offer>> watchOpenForCaregiver(String uid) =>
-      offers.watch((l) => [for (final o in l) if (o.caregiverId == uid && o.status == OfferStatus.offered) o]);
+  Stream<List<Offer>> watchOpenForCaregiver(String uid) => offers.watch(
+    (l) => [
+      for (final o in l)
+        if (o.caregiverId == uid && o.status == OfferStatus.offered) o,
+    ],
+  );
 }
 
 class FakeDeliveryRepo implements DeliveryRepo {
-  FakeDeliveryRepo([List<MedDelivery>? deliveries]) : deliveries = Live(deliveries);
+  FakeDeliveryRepo([List<MedDelivery>? deliveries])
+    : deliveries = Live(deliveries);
   final Live<MedDelivery> deliveries;
   final List<(String, Rating)> ratings = [];
 
   void put(MedDelivery d) => deliveries.upsert(d, (x) => x.id == d.id);
 
   @override
-  Stream<List<MedDelivery>> watchForFamily(String fid) =>
-      deliveries.watch((l) => [for (final d in l) if (d.familyId == fid) d]);
+  Stream<List<MedDelivery>> watchForFamily(String fid) => deliveries.watch(
+    (l) => [
+      for (final d in l)
+        if (d.familyId == fid) d,
+    ],
+  );
 
   @override
   Stream<MedDelivery?> watch(String id) => deliveries.watch((l) {
-        for (final d in l) {
-          if (d.id == id) return d;
-        }
-        return null;
-      });
+    for (final d in l) {
+      if (d.id == id) return d;
+    }
+    return null;
+  });
 
   @override
-  Stream<List<MedDelivery>> watchForCaregiver(String uid) =>
-      deliveries.watch((l) => [for (final d in l) if (d.caregiverId == uid) d]);
+  Stream<List<MedDelivery>> watchForCaregiver(String uid) => deliveries.watch(
+    (l) => [
+      for (final d in l)
+        if (d.caregiverId == uid) d,
+    ],
+  );
 
   @override
   Future<void> rate(String id, Rating rating) async {
@@ -285,7 +348,10 @@ class FakeNotificationRepo implements NotificationRepo {
   Future<void> markRead(String uid, String nid) async {
     marked.add(nid);
     final n = items.items.firstWhere((n) => n.id == nid);
-    items.upsert(AppNotification.fromMap(nid, {...n.toMap(), 'read': true}), (x) => x.id == nid);
+    items.upsert(
+      AppNotification.fromMap(nid, {...n.toMap(), 'read': true}),
+      (x) => x.id == nid,
+    );
   }
 }
 
@@ -294,7 +360,12 @@ class FakeReceiptRepo implements ReceiptRepo {
   final Live<Receipt> items;
 
   @override
-  Stream<List<Receipt>> watch(String uid) => items.watch((l) => [for (final r in l) if (r.uid == uid) r]);
+  Stream<List<Receipt>> watch(String uid) => items.watch(
+    (l) => [
+      for (final r in l)
+        if (r.uid == uid) r,
+    ],
+  );
 }
 
 /// All fakes bundled, with provider overrides for a ProviderScope.
@@ -312,16 +383,18 @@ class Fakes {
     List<Receipt>? receipts,
     List<CaregiverProfile>? caregivers,
     Map<String, String> passwords = const {},
-  })  : auth = FakeAuthRepo(uid: uid, passwords: passwords),
-        user = FakeUserRepo(users),
-        family = FakeFamilyRepo(families: families, patients: patients),
-        booking = FakeBookingRepo(bookings),
-        group = FakeGroupRepo(groups),
-        offer = FakeOfferRepo(offers),
-        delivery = FakeDeliveryRepo(deliveries),
-        notification = FakeNotificationRepo(notifications),
-        receipt = FakeReceiptRepo(receipts),
-        caregiver = FakeCaregiverRepo(caregivers);
+  }) : auth = FakeAuthRepo(uid: uid, passwords: passwords),
+       user = FakeUserRepo(users),
+       family = FakeFamilyRepo(families: families, patients: patients),
+       booking = FakeBookingRepo(bookings),
+       group = FakeGroupRepo(groups),
+       offer = FakeOfferRepo(offers),
+       delivery = FakeDeliveryRepo(deliveries),
+       notification = FakeNotificationRepo(notifications),
+       receipt = FakeReceiptRepo(receipts),
+       caregiver = FakeCaregiverRepo(caregivers) {
+    family.onFamilyCreated = (uid, fid) => user.update(uid, {'familyId': fid});
+  }
 
   final FakeAuthRepo auth;
   final FakeUserRepo user;
@@ -335,15 +408,15 @@ class Fakes {
   final FakeCaregiverRepo caregiver;
 
   List<Override> get overrides => [
-        authRepoProvider.overrideWithValue(auth),
-        userRepoProvider.overrideWithValue(user),
-        familyRepoProvider.overrideWithValue(family),
-        bookingRepoProvider.overrideWithValue(booking),
-        groupRepoProvider.overrideWithValue(group),
-        offerRepoProvider.overrideWithValue(offer),
-        deliveryRepoProvider.overrideWithValue(delivery),
-        notificationRepoProvider.overrideWithValue(notification),
-        receiptRepoProvider.overrideWithValue(receipt),
-        caregiverRepoProvider.overrideWithValue(caregiver),
-      ];
+    authRepoProvider.overrideWithValue(auth),
+    userRepoProvider.overrideWithValue(user),
+    familyRepoProvider.overrideWithValue(family),
+    bookingRepoProvider.overrideWithValue(booking),
+    groupRepoProvider.overrideWithValue(group),
+    offerRepoProvider.overrideWithValue(offer),
+    deliveryRepoProvider.overrideWithValue(delivery),
+    notificationRepoProvider.overrideWithValue(notification),
+    receiptRepoProvider.overrideWithValue(receipt),
+    caregiverRepoProvider.overrideWithValue(caregiver),
+  ];
 }

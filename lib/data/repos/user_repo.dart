@@ -20,10 +20,12 @@ class FirestoreUserRepo implements UserRepo {
       .map((s) => s.exists ? AppUser.fromMap(s.id, s.data()!) : null);
 
   @override
-  Future<void> create(AppUser user) => _db.doc('users/${user.uid}').set(user.toMap());
+  Future<void> create(AppUser user) =>
+      _db.doc('users/${user.uid}').set(user.toMap());
 
   @override
-  Future<void> update(String uid, Map<String, dynamic> fields) => _db.doc('users/$uid').update(fields);
+  Future<void> update(String uid, Map<String, dynamic> fields) =>
+      _db.doc('users/$uid').update(fields);
 }
 
 abstract class CaregiverRepo {
@@ -42,5 +44,6 @@ class FirestoreCaregiverRepo implements CaregiverRepo {
       .map((s) => s.exists ? CaregiverProfile.fromMap(s.id, s.data()!) : null);
 
   @override
-  Future<void> setOnDuty(String uid, bool onDuty) => _db.doc('caregivers/$uid').update({'onDuty': onDuty});
+  Future<void> setOnDuty(String uid, bool onDuty) =>
+      _db.doc('caregivers/$uid').update({'onDuty': onDuty});
 }

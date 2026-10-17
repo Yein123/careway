@@ -38,7 +38,14 @@ class SeatRow extends StatelessWidget {
                   height: 32,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(shape: BoxShape.circle, color: bg),
-                  child: Text(who, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: fg)),
+                  child: Text(
+                    who,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: fg,
+                    ),
+                  ),
                 ),
         );
       }),

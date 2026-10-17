@@ -16,10 +16,17 @@ enum DeliveryStatus {
   const DeliveryStatus(this.wire);
   final String wire;
 
-  static DeliveryStatus fromWire(String s) => values.firstWhere((v) => v.wire == s, orElse: () => pendingCaregiver);
+  static DeliveryStatus fromWire(String s) =>
+      values.firstWhere((v) => v.wire == s, orElse: () => pendingCaregiver);
 }
 
-const deliveryStageKeys = ['booked', 'collecting', 'at_pharmacy', 'on_the_way', 'delivered'];
+const deliveryStageKeys = [
+  'booked',
+  'collecting',
+  'at_pharmacy',
+  'on_the_way',
+  'delivered',
+];
 const deliveryStageLabels = {
   'booked': 'Booked',
   'collecting': 'Collecting documents',
@@ -95,38 +102,46 @@ class MedDelivery {
       routeKm: (m['routeKm'] as num?)?.toDouble() ?? 0,
       baseSen: (fee['baseSen'] as num?)?.toInt() ?? 0,
       distanceSen: (fee['distanceSen'] as num?)?.toInt() ?? 0,
-      status: DeliveryStatus.fromWire(m['status'] as String? ?? 'pending_caregiver'),
+      status: DeliveryStatus.fromWire(
+        m['status'] as String? ?? 'pending_caregiver',
+      ),
       caregiverId: m['caregiverId'] as String?,
       caregiverName: m['caregiverName'] as String?,
       offerCaregiverName: m['offerCaregiverName'] as String?,
       offerExpiresAt: readDate(m['offerExpiresAt']),
       steps: readMaps(m['steps']).map(VisitStep.fromMap).toList(),
-      payment: m['payment'] == null ? null : PaymentInfo.fromMap(readMap(m['payment'])),
+      payment: m['payment'] == null
+          ? null
+          : PaymentInfo.fromMap(readMap(m['payment'])),
       rating: m['rating'] == null ? null : Rating.fromMap(readMap(m['rating'])),
       createdAt: readDate(m['createdAt']),
     );
   }
 
   Map<String, dynamic> toMap() => {
-        'familyId': familyId,
-        'guardianUid': guardianUid,
-        'patientId': patientId,
-        'patientName': patientName,
-        'pharmacyId': pharmacyId,
-        'pharmacyName': pharmacyName,
-        'window': window,
-        'deliverTo': deliverTo,
-        'date': writeDate(date),
-        'routeKm': routeKm,
-        'fee': {'baseSen': baseSen, 'distanceSen': distanceSen, 'totalSen': totalSen},
-        'status': status.wire,
-        'caregiverId': caregiverId,
-        'caregiverName': caregiverName,
-        'offerCaregiverName': offerCaregiverName,
-        'offerExpiresAt': writeDate(offerExpiresAt),
-        'steps': [for (final s in steps) s.toMap()],
-        'payment': payment?.toMap(),
-        'rating': rating?.toMap(),
-        'createdAt': writeDate(createdAt),
-      };
+    'familyId': familyId,
+    'guardianUid': guardianUid,
+    'patientId': patientId,
+    'patientName': patientName,
+    'pharmacyId': pharmacyId,
+    'pharmacyName': pharmacyName,
+    'window': window,
+    'deliverTo': deliverTo,
+    'date': writeDate(date),
+    'routeKm': routeKm,
+    'fee': {
+      'baseSen': baseSen,
+      'distanceSen': distanceSen,
+      'totalSen': totalSen,
+    },
+    'status': status.wire,
+    'caregiverId': caregiverId,
+    'caregiverName': caregiverName,
+    'offerCaregiverName': offerCaregiverName,
+    'offerExpiresAt': writeDate(offerExpiresAt),
+    'steps': [for (final s in steps) s.toMap()],
+    'payment': payment?.toMap(),
+    'rating': rating?.toMap(),
+    'createdAt': writeDate(createdAt),
+  };
 }

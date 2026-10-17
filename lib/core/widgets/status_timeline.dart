@@ -15,7 +15,11 @@ class TimelineStep {
 }
 
 class StatusTimeline extends StatelessWidget {
-  const StatusTimeline({super.key, required this.steps, this.accent = CwColors.primary});
+  const StatusTimeline({
+    super.key,
+    required this.steps,
+    this.accent = CwColors.primary,
+  });
 
   final List<TimelineStep> steps;
   final Color accent;
@@ -24,7 +28,8 @@ class StatusTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        for (var i = 0; i < steps.length; i++) _Row(step: steps[i], last: i == steps.length - 1, accent: accent),
+        for (var i = 0; i < steps.length; i++)
+          _Row(step: steps[i], last: i == steps.length - 1, accent: accent),
       ],
     );
   }
@@ -45,19 +50,34 @@ class _Row extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Column(children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: done ? accent : (current ? CwColors.white : CwColors.surface),
-                border: Border.all(color: done || current ? accent : CwColors.line, width: current ? 3 : 2),
+          Column(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: done
+                      ? accent
+                      : (current ? CwColors.white : CwColors.surface),
+                  border: Border.all(
+                    color: done || current ? accent : CwColors.line,
+                    width: current ? 3 : 2,
+                  ),
+                ),
+                child: done
+                    ? const Icon(Icons.check, size: 14, color: CwColors.white)
+                    : null,
               ),
-              child: done ? const Icon(Icons.check, size: 14, color: CwColors.white) : null,
-            ),
-            if (!last) Expanded(child: Container(width: 2, color: done ? accent : CwColors.line)),
-          ]),
+              if (!last)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: done ? accent : CwColors.line,
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Padding(
@@ -70,11 +90,16 @@ class _Row extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: current ? FontWeight.w800 : FontWeight.w600,
-                      color: step.state == TimelineState.upcoming ? CwColors.muted : CwColors.ink,
+                      color: step.state == TimelineState.upcoming
+                          ? CwColors.muted
+                          : CwColors.ink,
                     ),
                   ),
                   if (step.at != null)
-                    Text(DateFormat('h:mm a').format(step.at!), style: CwText.small)
+                    Text(
+                      DateFormat('h:mm a').format(step.at!),
+                      style: CwText.small,
+                    )
                   else if (step.detail != null)
                     Text(step.detail!, style: CwText.small),
                 ],

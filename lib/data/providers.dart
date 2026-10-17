@@ -12,20 +12,44 @@ import 'repos/family_repo.dart';
 import 'repos/notification_repo.dart';
 import 'repos/user_repo.dart';
 
-final authRepoProvider = Provider<AuthRepo>((ref) => FirebaseAuthRepo(FirebaseAuth.instance));
-final userRepoProvider = Provider<UserRepo>((ref) => FirestoreUserRepo(FirebaseFirestore.instance));
-final caregiverRepoProvider = Provider<CaregiverRepo>((ref) => FirestoreCaregiverRepo(FirebaseFirestore.instance));
-final familyRepoProvider = Provider<FamilyRepo>((ref) => FirestoreFamilyRepo(FirebaseFirestore.instance));
-final bookingRepoProvider = Provider<BookingRepo>((ref) => FirestoreBookingRepo(FirebaseFirestore.instance));
-final groupRepoProvider = Provider<GroupRepo>((ref) => FirestoreGroupRepo(FirebaseFirestore.instance));
-final offerRepoProvider = Provider<OfferRepo>((ref) => FirestoreOfferRepo(FirebaseFirestore.instance));
-final deliveryRepoProvider = Provider<DeliveryRepo>((ref) => FirestoreDeliveryRepo(FirebaseFirestore.instance));
-final notificationRepoProvider =
-    Provider<NotificationRepo>((ref) => FirestoreNotificationRepo(FirebaseFirestore.instance));
-final receiptRepoProvider = Provider<ReceiptRepo>((ref) => FirestoreReceiptRepo(FirebaseFirestore.instance));
+final authRepoProvider = Provider<AuthRepo>(
+  (ref) => FirebaseAuthRepo(FirebaseAuth.instance),
+);
+final userRepoProvider = Provider<UserRepo>(
+  (ref) => FirestoreUserRepo(FirebaseFirestore.instance),
+);
+final caregiverRepoProvider = Provider<CaregiverRepo>(
+  (ref) => FirestoreCaregiverRepo(FirebaseFirestore.instance),
+);
+final familyRepoProvider = Provider<FamilyRepo>(
+  (ref) => FirestoreFamilyRepo(FirebaseFirestore.instance),
+);
+final bookingRepoProvider = Provider<BookingRepo>(
+  (ref) => FirestoreBookingRepo(FirebaseFirestore.instance),
+);
+final groupRepoProvider = Provider<GroupRepo>(
+  (ref) => FirestoreGroupRepo(FirebaseFirestore.instance),
+);
+final offerRepoProvider = Provider<OfferRepo>(
+  (ref) => FirestoreOfferRepo(FirebaseFirestore.instance),
+);
+final deliveryRepoProvider = Provider<DeliveryRepo>(
+  (ref) => FirestoreDeliveryRepo(FirebaseFirestore.instance),
+);
+final notificationRepoProvider = Provider<NotificationRepo>(
+  (ref) => FirestoreNotificationRepo(FirebaseFirestore.instance),
+);
+final receiptRepoProvider = Provider<ReceiptRepo>(
+  (ref) => FirestoreReceiptRepo(FirebaseFirestore.instance),
+);
+
+/// Current time; overridden in tests.
+final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
 /// Signed-in uid, or null.
-final authStateProvider = StreamProvider<String?>((ref) => ref.watch(authRepoProvider).authState);
+final authStateProvider = StreamProvider<String?>(
+  (ref) => ref.watch(authRepoProvider).authState,
+);
 
 final currentUserProvider = StreamProvider<AppUser?>((ref) {
   final uid = ref.watch(authStateProvider).value;
@@ -33,7 +57,9 @@ final currentUserProvider = StreamProvider<AppUser?>((ref) {
   return ref.watch(userRepoProvider).watch(uid);
 });
 
-final familyIdProvider = Provider<String?>((ref) => ref.watch(currentUserProvider).value?.familyId);
+final familyIdProvider = Provider<String?>(
+  (ref) => ref.watch(currentUserProvider).value?.familyId,
+);
 
 final familyProvider = StreamProvider<Family?>((ref) {
   final fid = ref.watch(familyIdProvider);

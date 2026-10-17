@@ -23,19 +23,31 @@ class AsyncView<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return value.when(
-      data: (v) => (isEmpty?.call(v) ?? false) && empty != null ? empty! : data(v),
+      data: (v) =>
+          (isEmpty?.call(v) ?? false) && empty != null ? empty! : data(v),
       loading: () => const Center(
-        child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()),
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(),
+        ),
       ),
       error: (e, _) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.cloud_off, color: CwColors.muted, size: 32),
-            const SizedBox(height: 8),
-            const Text('Something went wrong loading this.', style: CwText.muted, textAlign: TextAlign.center),
-            if (onRetry != null) TextButton(onPressed: onRetry, child: const Text('Retry')),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off, color: CwColors.muted, size: 32),
+              const SizedBox(height: 8),
+              const Text(
+                'Something went wrong loading this.',
+                style: CwText.muted,
+                textAlign: TextAlign.center,
+              ),
+              if (onRetry != null)
+                TextButton(onPressed: onRetry, child: const Text('Retry')),
+            ],
+          ),
         ),
       ),
     );
@@ -44,7 +56,13 @@ class AsyncView<T> extends StatelessWidget {
 
 /// Friendly empty state with an icon and message.
 class EmptyState extends StatelessWidget {
-  const EmptyState({super.key, required this.icon, required this.title, this.message, this.action});
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.message,
+    this.action,
+  });
 
   final IconData icon;
   final String title;
@@ -53,21 +71,27 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: const BoxDecoration(color: CwColors.lilac, shape: BoxShape.circle),
-            child: Icon(icon, color: CwColors.primary, size: 30),
+    padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 64,
+          height: 64,
+          decoration: const BoxDecoration(
+            color: CwColors.lilac,
+            shape: BoxShape.circle,
           ),
-          const SizedBox(height: 12),
-          Text(title, style: CwText.h3, textAlign: TextAlign.center),
-          if (message != null) ...[
-            const SizedBox(height: 4),
-            Text(message!, style: CwText.muted, textAlign: TextAlign.center),
-          ],
-          if (action != null) ...[const SizedBox(height: 16), action!],
-        ]),
-      );
+          child: Icon(icon, color: CwColors.primary, size: 30),
+        ),
+        const SizedBox(height: 12),
+        Text(title, style: CwText.h3, textAlign: TextAlign.center),
+        if (message != null) ...[
+          const SizedBox(height: 4),
+          Text(message!, style: CwText.muted, textAlign: TextAlign.center),
+        ],
+        if (action != null) ...[const SizedBox(height: 16), action!],
+      ],
+    ),
+  );
 }

@@ -9,7 +9,11 @@ abstract class FamilyRepo {
 
   /// Creates the family with [adminUid] as its only member and links the
   /// user's `familyId`. Returns the family id.
-  Future<String> createFamily({required String name, required String adminUid, required String adminName});
+  Future<String> createFamily({
+    required String name,
+    required String adminUid,
+    required String adminName,
+  });
 
   /// Creates (empty id) or replaces a patient. Returns the patient id.
   Future<String> savePatient(String fid, Patient patient);
@@ -20,8 +24,10 @@ class FirestoreFamilyRepo implements FamilyRepo {
   final FirebaseFirestore _db;
 
   @override
-  Stream<Family?> watchFamily(String fid) =>
-      _db.doc('families/$fid').snapshots().map((s) => s.exists ? Family.fromMap(s.id, s.data()!) : null);
+  Stream<Family?> watchFamily(String fid) => _db
+      .doc('families/$fid')
+      .snapshots()
+      .map((s) => s.exists ? Family.fromMap(s.id, s.data()!) : null);
 
   @override
   Stream<List<Patient>> watchPatients(String fid) => _db
@@ -37,10 +43,23 @@ class FirestoreFamilyRepo implements FamilyRepo {
       .map((s) => s.exists ? Patient.fromMap(s.id, s.data()!) : null);
 
   @override
-  Future<String> createFamily({required String name, required String adminUid, required String adminName}) async {
+  Future<String> createFamily({
+    required String name,
+    required String adminUid,
+    required String adminName,
+  }) async {
     final ref = _db.collection('families').doc();
     final batch = _db.batch()
-      ..set(ref, Family(id: ref.id, name: name, adminUid: adminUid, memberUids: [adminUid], memberNames: {adminUid: adminName}).toMap())
+      ..set(
+        ref,
+        Family(
+          id: ref.id,
+          name: name,
+          adminUid: adminUid,
+          memberUids: [adminUid],
+          memberNames: {adminUid: adminName},
+        ).toMap(),
+      )
       ..update(_db.doc('users/$adminUid'), {'familyId': ref.id});
     await batch.commit();
     return ref.id;

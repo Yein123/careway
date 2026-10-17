@@ -18,7 +18,9 @@ class FirestoreBookingRepo implements BookingRepo {
   FirestoreBookingRepo(this._db);
   final FirebaseFirestore _db;
 
-  List<Booking> _list(QuerySnapshot<Map<String, dynamic>> q) => [for (final d in q.docs) Booking.fromMap(d.id, d.data())];
+  List<Booking> _list(QuerySnapshot<Map<String, dynamic>> q) => [
+    for (final d in q.docs) Booking.fromMap(d.id, d.data()),
+  ];
 
   @override
   Stream<List<Booking>> watchForFamily(String fid) => _db
@@ -29,8 +31,10 @@ class FirestoreBookingRepo implements BookingRepo {
       .map(_list);
 
   @override
-  Stream<Booking?> watch(String id) =>
-      _db.doc('bookings/$id').snapshots().map((s) => s.exists ? Booking.fromMap(s.id, s.data()!) : null);
+  Stream<Booking?> watch(String id) => _db
+      .doc('bookings/$id')
+      .snapshots()
+      .map((s) => s.exists ? Booking.fromMap(s.id, s.data()!) : null);
 
   @override
   Stream<List<Booking>> watchForCaregiver(String uid) => _db
@@ -41,12 +45,16 @@ class FirestoreBookingRepo implements BookingRepo {
       .map(_list);
 
   @override
-  Future<void> rate(String id, Rating rating) => _db.doc('bookings/$id').update({'rating': rating.toMap()});
+  Future<void> rate(String id, Rating rating) =>
+      _db.doc('bookings/$id').update({'rating': rating.toMap()});
 }
 
 abstract class GroupRepo {
   /// Groups for a hospital on a trip date ('yyyy-MM-dd'), open or full.
-  Stream<List<Group>> watchForDay({required String hospitalId, required String date});
+  Stream<List<Group>> watchForDay({
+    required String hospitalId,
+    required String date,
+  });
   Stream<Group?> watch(String id);
 }
 
@@ -55,17 +63,26 @@ class FirestoreGroupRepo implements GroupRepo {
   final FirebaseFirestore _db;
 
   @override
-  Stream<List<Group>> watchForDay({required String hospitalId, required String date}) => _db
+  Stream<List<Group>> watchForDay({
+    required String hospitalId,
+    required String date,
+  }) => _db
       .collection('groups')
       .where('hospitalId', isEqualTo: hospitalId)
       .where('date', isEqualTo: date)
       .where('status', whereIn: ['open', 'full'])
       .snapshots()
-      .map((q) => [for (final d in q.docs) Group.fromMap(d.id, d.data())]..sort((a, b) => a.pickupAt.compareTo(b.pickupAt)));
+      .map(
+        (q) =>
+            [for (final d in q.docs) Group.fromMap(d.id, d.data())]
+              ..sort((a, b) => a.pickupAt.compareTo(b.pickupAt)),
+      );
 
   @override
-  Stream<Group?> watch(String id) =>
-      _db.doc('groups/$id').snapshots().map((s) => s.exists ? Group.fromMap(s.id, s.data()!) : null);
+  Stream<Group?> watch(String id) => _db
+      .doc('groups/$id')
+      .snapshots()
+      .map((s) => s.exists ? Group.fromMap(s.id, s.data()!) : null);
 }
 
 abstract class OfferRepo {
@@ -97,8 +114,9 @@ class FirestoreDeliveryRepo implements DeliveryRepo {
   FirestoreDeliveryRepo(this._db);
   final FirebaseFirestore _db;
 
-  List<MedDelivery> _list(QuerySnapshot<Map<String, dynamic>> q) =>
-      [for (final d in q.docs) MedDelivery.fromMap(d.id, d.data())];
+  List<MedDelivery> _list(QuerySnapshot<Map<String, dynamic>> q) => [
+    for (final d in q.docs) MedDelivery.fromMap(d.id, d.data()),
+  ];
 
   @override
   Stream<List<MedDelivery>> watchForFamily(String fid) => _db
@@ -109,13 +127,19 @@ class FirestoreDeliveryRepo implements DeliveryRepo {
       .map(_list);
 
   @override
-  Stream<MedDelivery?> watch(String id) =>
-      _db.doc('deliveries/$id').snapshots().map((s) => s.exists ? MedDelivery.fromMap(s.id, s.data()!) : null);
+  Stream<MedDelivery?> watch(String id) => _db
+      .doc('deliveries/$id')
+      .snapshots()
+      .map((s) => s.exists ? MedDelivery.fromMap(s.id, s.data()!) : null);
 
   @override
-  Stream<List<MedDelivery>> watchForCaregiver(String uid) =>
-      _db.collection('deliveries').where('caregiverId', isEqualTo: uid).snapshots().map(_list);
+  Stream<List<MedDelivery>> watchForCaregiver(String uid) => _db
+      .collection('deliveries')
+      .where('caregiverId', isEqualTo: uid)
+      .snapshots()
+      .map(_list);
 
   @override
-  Future<void> rate(String id, Rating rating) => _db.doc('deliveries/$id').update({'rating': rating.toMap()});
+  Future<void> rate(String id, Rating rating) =>
+      _db.doc('deliveries/$id').update({'rating': rating.toMap()});
 }

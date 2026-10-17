@@ -13,14 +13,20 @@ enum BookingStatus {
   const BookingStatus(this.wire);
   final String wire;
 
-  static BookingStatus fromWire(String s) =>
-      values.firstWhere((v) => v.wire == s, orElse: () => throw ArgumentError.value(s, 'status'));
+  static BookingStatus fromWire(String s) => values.firstWhere(
+    (v) => v.wire == s,
+    orElse: () => throw ArgumentError.value(s, 'status'),
+  );
 
-  bool get isTerminal => this == completed || this == cancelled || this == expired;
+  bool get isTerminal =>
+      this == completed || this == cancelled || this == expired;
 }
 
 const _transitions = {
-  BookingStatus.draft: {BookingStatus.pendingCaregiver, BookingStatus.cancelled},
+  BookingStatus.draft: {
+    BookingStatus.pendingCaregiver,
+    BookingStatus.cancelled,
+  },
   BookingStatus.pendingCaregiver: {
     BookingStatus.awaitingPayment,
     BookingStatus.notMatched,
@@ -33,7 +39,11 @@ const _transitions = {
   },
   BookingStatus.confirmed: {BookingStatus.inProgress, BookingStatus.cancelled},
   BookingStatus.inProgress: {BookingStatus.completed},
-  BookingStatus.notMatched: {BookingStatus.pendingCaregiver, BookingStatus.cancelled},
+  BookingStatus.notMatched: {
+    BookingStatus.pendingCaregiver,
+    BookingStatus.cancelled,
+  },
 };
 
-bool canTransition(BookingStatus from, BookingStatus to) => _transitions[from]?.contains(to) ?? false;
+bool canTransition(BookingStatus from, BookingStatus to) =>
+    _transitions[from]?.contains(to) ?? false;

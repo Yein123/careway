@@ -19,7 +19,8 @@ class AppNotification {
   final bool read;
   final DateTime? createdAt;
 
-  factory AppNotification.fromMap(String id, Map<String, dynamic> m) => AppNotification(
+  factory AppNotification.fromMap(String id, Map<String, dynamic> m) =>
+      AppNotification(
         id: id,
         type: m['type'] as String? ?? 'info',
         title: m['title'] as String? ?? '',
@@ -29,8 +30,14 @@ class AppNotification {
         createdAt: readDate(m['createdAt']),
       );
 
-  Map<String, dynamic> toMap() =>
-      {'type': type, 'title': title, 'body': body, 'link': link, 'read': read, 'createdAt': writeDate(createdAt)};
+  Map<String, dynamic> toMap() => {
+    'type': type,
+    'title': title,
+    'body': body,
+    'link': link,
+    'read': read,
+    'createdAt': writeDate(createdAt),
+  };
 }
 
 enum ReceiptKind { payment, refund, credit }
@@ -59,25 +66,25 @@ class Receipt {
   final DateTime? createdAt;
 
   factory Receipt.fromMap(String id, Map<String, dynamic> m) => Receipt(
-        id: id,
-        uid: m['uid'] as String? ?? '',
-        amountSen: (m['amountSen'] as num?)?.toInt() ?? 0,
-        kind: readEnum(ReceiptKind.values, m['kind'], ReceiptKind.payment),
-        label: m['label'] as String? ?? '',
-        method: m['method'] as String? ?? '',
-        bookingId: m['bookingId'] as String?,
-        deliveryId: m['deliveryId'] as String?,
-        createdAt: readDate(m['createdAt']),
-      );
+    id: id,
+    uid: m['uid'] as String? ?? '',
+    amountSen: (m['amountSen'] as num?)?.toInt() ?? 0,
+    kind: readEnum(ReceiptKind.values, m['kind'], ReceiptKind.payment),
+    label: m['label'] as String? ?? '',
+    method: m['method'] as String? ?? '',
+    bookingId: m['bookingId'] as String?,
+    deliveryId: m['deliveryId'] as String?,
+    createdAt: readDate(m['createdAt']),
+  );
 
   Map<String, dynamic> toMap() => {
-        'uid': uid,
-        'amountSen': amountSen,
-        'kind': kind.name,
-        'label': label,
-        'method': method,
-        'bookingId': bookingId,
-        'deliveryId': deliveryId,
-        'createdAt': writeDate(createdAt),
-      };
+    'uid': uid,
+    'amountSen': amountSen,
+    'kind': kind.name,
+    'label': label,
+    'method': method,
+    'bookingId': bookingId,
+    'deliveryId': deliveryId,
+    'createdAt': writeDate(createdAt),
+  };
 }

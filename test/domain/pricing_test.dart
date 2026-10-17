@@ -31,12 +31,19 @@ void main() {
   });
 
   test('escort final rounds up to 30-minute steps', () {
-    expect(escortFinalSen(const Duration(hours: 3, minutes: 10)), 3 * 3000 + 1500 + 2400);
+    expect(
+      escortFinalSen(const Duration(hours: 3, minutes: 10)),
+      3 * 3000 + 1500 + 2400,
+    );
     expect(escortFinalSen(const Duration(hours: 3)), 9000 + 2400);
   });
 
   test('settle worked example: 40/30/22 -> refunds 18/8/0', () {
-    expect(settleGroupRefunds(GroupPackage.saver, [4000, 3000, 2200]), [1800, 800, 0]);
+    expect(settleGroupRefunds(GroupPackage.saver, [4000, 3000, 2200]), [
+      1800,
+      800,
+      0,
+    ]);
   });
 
   test('settle after cancel never charges more', () {
@@ -51,22 +58,42 @@ void main() {
 
   group('cancelOutcome', () {
     test('before lock is a full refund', () {
-      final o = cancelOutcome(package: GroupPackage.saver, level: 1, paidSen: 2200, afterLock: false);
+      final o = cancelOutcome(
+        package: GroupPackage.saver,
+        level: 1,
+        paidSen: 2200,
+        afterLock: false,
+      );
       expect((o.refundSen, o.creditSen), (2200, 0));
     });
 
     test('saver after lock becomes CareWay credit', () {
-      final o = cancelOutcome(package: GroupPackage.saver, level: 1, paidSen: 2200, afterLock: true);
+      final o = cancelOutcome(
+        package: GroupPackage.saver,
+        level: 1,
+        paidSen: 2200,
+        afterLock: true,
+      );
       expect((o.refundSen, o.creditSen), (0, 2200));
     });
 
     test('flex after lock refunds 50%', () {
-      final o = cancelOutcome(package: GroupPackage.flex, level: 1, paidSen: 3500, afterLock: true);
+      final o = cancelOutcome(
+        package: GroupPackage.flex,
+        level: 1,
+        paidSen: 3500,
+        afterLock: true,
+      );
       expect((o.refundSen, o.creditSen), (1750, 0));
     });
 
     test('level 2 after lock refunds 50%', () {
-      final o = cancelOutcome(package: null, level: 2, paidSen: 14400, afterLock: true);
+      final o = cancelOutcome(
+        package: null,
+        level: 2,
+        paidSen: 14400,
+        afterLock: true,
+      );
       expect((o.refundSen, o.creditSen), (7200, 0));
     });
   });

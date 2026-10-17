@@ -9,7 +9,8 @@ class StepLabel extends StatelessWidget {
   final Color? color;
 
   @override
-  Widget build(BuildContext context) => Text(text.toUpperCase(), style: CwText.overline.copyWith(color: color));
+  Widget build(BuildContext context) =>
+      Text(text.toUpperCase(), style: CwText.overline.copyWith(color: color));
 }
 
 class SectionTitle extends StatelessWidget {
@@ -20,12 +21,14 @@ class SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 8, bottom: 8),
-        child: Row(children: [
-          Expanded(child: Text(text, style: CwText.h3)),
-          ?trailing,
-        ]),
-      );
+    padding: const EdgeInsets.only(top: 8, bottom: 8),
+    child: Row(
+      children: [
+        Expanded(child: Text(text, style: CwText.h3)),
+        ?trailing,
+      ],
+    ),
+  );
 }
 
 /// Label/value row used in summaries and price breakdowns.
@@ -38,14 +41,16 @@ class KeyValueRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: Text(label, style: bold ? CwText.bodyBold : CwText.muted)),
-            const SizedBox(width: 12),
-            Text(value, style: bold ? CwText.h3 : CwText.bodyBold),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Text(label, style: bold ? CwText.bodyBold : CwText.muted),
         ),
-      );
+        const SizedBox(width: 12),
+        Text(value, style: bold ? CwText.h3 : CwText.bodyBold),
+      ],
+    ),
+  );
 }

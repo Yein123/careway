@@ -8,7 +8,13 @@ import 'firestore_utils.dart';
 const _eq = DeepCollectionEquality();
 
 class PatientSnapshot {
-  const PatientSnapshot({required this.name, required this.age, required this.mobility, this.allergy = '', this.talkNotes = ''});
+  const PatientSnapshot({
+    required this.name,
+    required this.age,
+    required this.mobility,
+    this.allergy = '',
+    this.talkNotes = '',
+  });
 
   final String name;
   final int age;
@@ -19,15 +25,20 @@ class PatientSnapshot {
   String get initials => initialsOf(name);
 
   factory PatientSnapshot.fromMap(Map<String, dynamic> m) => PatientSnapshot(
-        name: m['name'] as String? ?? '',
-        age: (m['age'] as num?)?.toInt() ?? 0,
-        mobility: readEnum(Mobility.values, m['mobility'], Mobility.independent),
-        allergy: m['allergy'] as String? ?? '',
-        talkNotes: m['talkNotes'] as String? ?? '',
-      );
+    name: m['name'] as String? ?? '',
+    age: (m['age'] as num?)?.toInt() ?? 0,
+    mobility: readEnum(Mobility.values, m['mobility'], Mobility.independent),
+    allergy: m['allergy'] as String? ?? '',
+    talkNotes: m['talkNotes'] as String? ?? '',
+  );
 
-  Map<String, dynamic> toMap() =>
-      {'name': name, 'age': age, 'mobility': mobility.name, 'allergy': allergy, 'talkNotes': talkNotes};
+  Map<String, dynamic> toMap() => {
+    'name': name,
+    'age': age,
+    'mobility': mobility.name,
+    'allergy': allergy,
+    'talkNotes': talkNotes,
+  };
 }
 
 class PlaceRef {
@@ -38,10 +49,10 @@ class PlaceRef {
   final double lng;
 
   factory PlaceRef.fromMap(Map<String, dynamic> m) => PlaceRef(
-        label: m['label'] as String? ?? '',
-        lat: (m['lat'] as num?)?.toDouble() ?? 0,
-        lng: (m['lng'] as num?)?.toDouble() ?? 0,
-      );
+    label: m['label'] as String? ?? '',
+    lat: (m['lat'] as num?)?.toDouble() ?? 0,
+    lng: (m['lng'] as num?)?.toDouble() ?? 0,
+  );
 
   Map<String, dynamic> toMap() => {'label': label, 'lat': lat, 'lng': lng};
 }
@@ -59,7 +70,14 @@ class PriceLine {
 }
 
 class PriceInfo {
-  const PriceInfo({this.lines = const [], this.paidSen = 0, this.shareSen, this.finalShareSen, this.refundSen = 0, this.creditSen = 0});
+  const PriceInfo({
+    this.lines = const [],
+    this.paidSen = 0,
+    this.shareSen,
+    this.finalShareSen,
+    this.refundSen = 0,
+    this.creditSen = 0,
+  });
 
   final List<PriceLine> lines;
   final int paidSen;
@@ -75,22 +93,22 @@ class PriceInfo {
   int get totalSen => lines.fold(0, (t, l) => t + l.sen);
 
   factory PriceInfo.fromMap(Map<String, dynamic> m) => PriceInfo(
-        lines: readMaps(m['lines']).map(PriceLine.fromMap).toList(),
-        paidSen: (m['paidSen'] as num?)?.toInt() ?? 0,
-        shareSen: (m['shareSen'] as num?)?.toInt(),
-        finalShareSen: (m['finalShareSen'] as num?)?.toInt(),
-        refundSen: (m['refundSen'] as num?)?.toInt() ?? 0,
-        creditSen: (m['creditSen'] as num?)?.toInt() ?? 0,
-      );
+    lines: readMaps(m['lines']).map(PriceLine.fromMap).toList(),
+    paidSen: (m['paidSen'] as num?)?.toInt() ?? 0,
+    shareSen: (m['shareSen'] as num?)?.toInt(),
+    finalShareSen: (m['finalShareSen'] as num?)?.toInt(),
+    refundSen: (m['refundSen'] as num?)?.toInt() ?? 0,
+    creditSen: (m['creditSen'] as num?)?.toInt() ?? 0,
+  );
 
   Map<String, dynamic> toMap() => {
-        'lines': [for (final l in lines) l.toMap()],
-        'paidSen': paidSen,
-        'shareSen': shareSen,
-        'finalShareSen': finalShareSen,
-        'refundSen': refundSen,
-        'creditSen': creditSen,
-      };
+    'lines': [for (final l in lines) l.toMap()],
+    'paidSen': paidSen,
+    'shareSen': shareSen,
+    'finalShareSen': finalShareSen,
+    'refundSen': refundSen,
+    'creditSen': creditSen,
+  };
 }
 
 class PaymentInfo {
@@ -101,12 +119,16 @@ class PaymentInfo {
   final DateTime? paidAt;
 
   factory PaymentInfo.fromMap(Map<String, dynamic> m) => PaymentInfo(
-        method: m['method'] as String? ?? '',
-        status: m['status'] as String? ?? '',
-        paidAt: readDate(m['paidAt']),
-      );
+    method: m['method'] as String? ?? '',
+    status: m['status'] as String? ?? '',
+    paidAt: readDate(m['paidAt']),
+  );
 
-  Map<String, dynamic> toMap() => {'method': method, 'status': status, 'paidAt': writeDate(paidAt)};
+  Map<String, dynamic> toMap() => {
+    'method': method,
+    'status': status,
+    'paidAt': writeDate(paidAt),
+  };
 }
 
 class VisitStep {
@@ -115,7 +137,8 @@ class VisitStep {
   final String key;
   final DateTime at;
 
-  factory VisitStep.fromMap(Map<String, dynamic> m) => VisitStep(m['key'] as String, readDate(m['at'])!);
+  factory VisitStep.fromMap(Map<String, dynamic> m) =>
+      VisitStep(m['key'] as String, readDate(m['at'])!);
 
   Map<String, dynamic> toMap() => {'key': key, 'at': writeDate(at)};
 }
@@ -142,26 +165,26 @@ class VisitSummary {
   final DateTime? writtenAt;
 
   factory VisitSummary.fromMap(Map<String, dynamic> m) => VisitSummary(
-        seenBy: m['seenBy'] as String? ?? '',
-        diagnosis: m['diagnosis'] as String? ?? '',
-        instructions: readStrings(m['instructions']),
-        nextAppt: m['nextAppt'] as String? ?? '',
-        medicines: m['medicines'] as String? ?? '',
-        notes: m['notes'] as String? ?? '',
-        writtenBy: m['writtenBy'] as String? ?? '',
-        writtenAt: readDate(m['writtenAt']),
-      );
+    seenBy: m['seenBy'] as String? ?? '',
+    diagnosis: m['diagnosis'] as String? ?? '',
+    instructions: readStrings(m['instructions']),
+    nextAppt: m['nextAppt'] as String? ?? '',
+    medicines: m['medicines'] as String? ?? '',
+    notes: m['notes'] as String? ?? '',
+    writtenBy: m['writtenBy'] as String? ?? '',
+    writtenAt: readDate(m['writtenAt']),
+  );
 
   Map<String, dynamic> toMap() => {
-        'seenBy': seenBy,
-        'diagnosis': diagnosis,
-        'instructions': instructions,
-        'nextAppt': nextAppt,
-        'medicines': medicines,
-        'notes': notes,
-        'writtenBy': writtenBy,
-        'writtenAt': writeDate(writtenAt),
-      };
+    'seenBy': seenBy,
+    'diagnosis': diagnosis,
+    'instructions': instructions,
+    'nextAppt': nextAppt,
+    'medicines': medicines,
+    'notes': notes,
+    'writtenBy': writtenBy,
+    'writtenAt': writeDate(writtenAt),
+  };
 }
 
 class Rating {
@@ -172,17 +195,32 @@ class Rating {
   final String text;
 
   factory Rating.fromMap(Map<String, dynamic> m) => Rating(
-        stars: (m['stars'] as num?)?.toInt() ?? 0,
-        tags: readStrings(m['tags']),
-        text: m['text'] as String? ?? '',
-      );
+    stars: (m['stars'] as num?)?.toInt() ?? 0,
+    tags: readStrings(m['tags']),
+    text: m['text'] as String? ?? '',
+  );
 
   Map<String, dynamic> toMap() => {'stars': stars, 'tags': tags, 'text': text};
 }
 
 /// Visit step keys (spec §6). Group rides skip "waiting for the doctor".
-const groupStepKeys = ['picked_up', 'registered', 'with_doctor', 'pharmacy', 'ride_home', 'home'];
-const personalStepKeys = ['picked_up', 'registered', 'waiting_doctor', 'with_doctor', 'pharmacy', 'ride_home', 'home'];
+const groupStepKeys = [
+  'picked_up',
+  'registered',
+  'with_doctor',
+  'pharmacy',
+  'ride_home',
+  'home',
+];
+const personalStepKeys = [
+  'picked_up',
+  'registered',
+  'waiting_doctor',
+  'with_doctor',
+  'pharmacy',
+  'ride_home',
+  'home',
+];
 const stepLabels = {
   'picked_up': 'Picked up',
   'registered': 'Arrived and registered',
@@ -269,79 +307,88 @@ class Booking {
   List<String> get stepKeys => level == 1 ? groupStepKeys : personalStepKeys;
 
   /// The next step the caregiver will tap, or null when all done.
-  String? get nextStepKey => steps.length < stepKeys.length ? stepKeys[steps.length] : null;
+  String? get nextStepKey =>
+      steps.length < stepKeys.length ? stepKeys[steps.length] : null;
 
   factory Booking.fromMap(String id, Map<String, dynamic> m) => Booking(
-        id: id,
-        familyId: m['familyId'] as String? ?? '',
-        guardianUid: m['guardianUid'] as String? ?? '',
-        guardianName: m['guardianName'] as String? ?? '',
-        patientId: m['patientId'] as String? ?? '',
-        patient: PatientSnapshot.fromMap(readMap(m['patientSnapshot'])),
-        level: (m['level'] as num?)?.toInt() ?? 1,
-        pickup: PlaceRef.fromMap(readMap(m['pickup'])),
-        hospitalId: m['hospitalId'] as String? ?? '',
-        clinic: m['clinic'] as String? ?? '',
-        apptAt: readDate(m['apptAt'])!,
-        pickupAt: readDate(m['pickupAt']),
-        groupId: m['groupId'] as String?,
-        package: readEnumOrNull(GroupPackage.values, m['package']),
-        addons: {for (final a in readStrings(m['addons'])) ?readEnumOrNull(Addon.values, a)},
-        language: m['language'] as String?,
-        caregiverId: m['caregiverId'] as String?,
-        caregiverName: m['caregiverName'] as String?,
-        caregiverPhone: m['caregiverPhone'] as String?,
-        offerCaregiverName: m['offerCaregiverName'] as String?,
-        offerExpiresAt: readDate(m['offerExpiresAt']),
-        notMatchedReason: m['notMatchedReason'] as String?,
-        status: BookingStatus.fromWire(m['status'] as String? ?? 'draft'),
-        price: PriceInfo.fromMap(readMap(m['price'])),
-        payment: m['payment'] == null ? null : PaymentInfo.fromMap(readMap(m['payment'])),
-        steps: readMaps(m['steps']).map(VisitStep.fromMap).toList(),
-        summary: m['summary'] == null ? null : VisitSummary.fromMap(readMap(m['summary'])),
-        rating: m['rating'] == null ? null : Rating.fromMap(readMap(m['rating'])),
-        waitlist: m['waitlist'] as bool? ?? false,
-        lockAt: readDate(m['lockAt']),
-        createdAt: readDate(m['createdAt']),
-        acceptedAt: readDate(m['acceptedAt']),
-      );
+    id: id,
+    familyId: m['familyId'] as String? ?? '',
+    guardianUid: m['guardianUid'] as String? ?? '',
+    guardianName: m['guardianName'] as String? ?? '',
+    patientId: m['patientId'] as String? ?? '',
+    patient: PatientSnapshot.fromMap(readMap(m['patientSnapshot'])),
+    level: (m['level'] as num?)?.toInt() ?? 1,
+    pickup: PlaceRef.fromMap(readMap(m['pickup'])),
+    hospitalId: m['hospitalId'] as String? ?? '',
+    clinic: m['clinic'] as String? ?? '',
+    apptAt: readDate(m['apptAt'])!,
+    pickupAt: readDate(m['pickupAt']),
+    groupId: m['groupId'] as String?,
+    package: readEnumOrNull(GroupPackage.values, m['package']),
+    addons: {
+      for (final a in readStrings(m['addons']))
+        ?readEnumOrNull(Addon.values, a),
+    },
+    language: m['language'] as String?,
+    caregiverId: m['caregiverId'] as String?,
+    caregiverName: m['caregiverName'] as String?,
+    caregiverPhone: m['caregiverPhone'] as String?,
+    offerCaregiverName: m['offerCaregiverName'] as String?,
+    offerExpiresAt: readDate(m['offerExpiresAt']),
+    notMatchedReason: m['notMatchedReason'] as String?,
+    status: BookingStatus.fromWire(m['status'] as String? ?? 'draft'),
+    price: PriceInfo.fromMap(readMap(m['price'])),
+    payment: m['payment'] == null
+        ? null
+        : PaymentInfo.fromMap(readMap(m['payment'])),
+    steps: readMaps(m['steps']).map(VisitStep.fromMap).toList(),
+    summary: m['summary'] == null
+        ? null
+        : VisitSummary.fromMap(readMap(m['summary'])),
+    rating: m['rating'] == null ? null : Rating.fromMap(readMap(m['rating'])),
+    waitlist: m['waitlist'] as bool? ?? false,
+    lockAt: readDate(m['lockAt']),
+    createdAt: readDate(m['createdAt']),
+    acceptedAt: readDate(m['acceptedAt']),
+  );
 
   Map<String, dynamic> toMap() => {
-        'familyId': familyId,
-        'guardianUid': guardianUid,
-        'guardianName': guardianName,
-        'patientId': patientId,
-        'patientSnapshot': patient.toMap(),
-        'level': level,
-        'pickup': pickup.toMap(),
-        'hospitalId': hospitalId,
-        'clinic': clinic,
-        'apptAt': writeDate(apptAt),
-        'pickupAt': writeDate(pickupAt),
-        'groupId': groupId,
-        'package': package?.name,
-        'addons': [for (final a in addons) a.name],
-        'language': language,
-        'caregiverId': caregiverId,
-        'caregiverName': caregiverName,
-        'caregiverPhone': caregiverPhone,
-        'offerCaregiverName': offerCaregiverName,
-        'offerExpiresAt': writeDate(offerExpiresAt),
-        'notMatchedReason': notMatchedReason,
-        'status': status.wire,
-        'price': price.toMap(),
-        'payment': payment?.toMap(),
-        'steps': [for (final s in steps) s.toMap()],
-        'summary': summary?.toMap(),
-        'rating': rating?.toMap(),
-        'waitlist': waitlist,
-        'lockAt': writeDate(lockAt),
-        'createdAt': writeDate(createdAt),
-        'acceptedAt': writeDate(acceptedAt),
-      };
+    'familyId': familyId,
+    'guardianUid': guardianUid,
+    'guardianName': guardianName,
+    'patientId': patientId,
+    'patientSnapshot': patient.toMap(),
+    'level': level,
+    'pickup': pickup.toMap(),
+    'hospitalId': hospitalId,
+    'clinic': clinic,
+    'apptAt': writeDate(apptAt),
+    'pickupAt': writeDate(pickupAt),
+    'groupId': groupId,
+    'package': package?.name,
+    'addons': [for (final a in addons) a.name],
+    'language': language,
+    'caregiverId': caregiverId,
+    'caregiverName': caregiverName,
+    'caregiverPhone': caregiverPhone,
+    'offerCaregiverName': offerCaregiverName,
+    'offerExpiresAt': writeDate(offerExpiresAt),
+    'notMatchedReason': notMatchedReason,
+    'status': status.wire,
+    'price': price.toMap(),
+    'payment': payment?.toMap(),
+    'steps': [for (final s in steps) s.toMap()],
+    'summary': summary?.toMap(),
+    'rating': rating?.toMap(),
+    'waitlist': waitlist,
+    'lockAt': writeDate(lockAt),
+    'createdAt': writeDate(createdAt),
+    'acceptedAt': writeDate(acceptedAt),
+  };
 
   @override
-  bool operator ==(Object other) => other is Booking && other.id == id && _eq.equals(other.toMap(), toMap());
+  bool operator ==(Object other) =>
+      other is Booking && other.id == id && _eq.equals(other.toMap(), toMap());
 
   @override
   int get hashCode => Object.hash(id, status, apptAt);

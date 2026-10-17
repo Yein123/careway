@@ -22,3 +22,8 @@
 # Firebase
 *-debug.log
 .firebase/
+
+# Firebase client config (regenerate with `flutterfire configure`)
+lib/firebase_options.dart
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist

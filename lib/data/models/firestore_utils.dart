@@ -10,12 +10,15 @@ DateTime? readDate(dynamic v) {
 
 Timestamp? writeDate(DateTime? d) => d == null ? null : Timestamp.fromDate(d);
 
-List<String> readStrings(dynamic v) => v == null ? const [] : List<String>.from(v as List);
+List<String> readStrings(dynamic v) =>
+    v == null ? const [] : List<String>.from(v as List);
 
-Map<String, dynamic> readMap(dynamic v) => v == null ? const {} : Map<String, dynamic>.from(v as Map);
+Map<String, dynamic> readMap(dynamic v) =>
+    v == null ? const {} : Map<String, dynamic>.from(v as Map);
 
-List<Map<String, dynamic>> readMaps(dynamic v) =>
-    v == null ? const [] : [for (final e in v as List) Map<String, dynamic>.from(e as Map)];
+List<Map<String, dynamic>> readMaps(dynamic v) => v == null
+    ? const []
+    : [for (final e in v as List) Map<String, dynamic>.from(e as Map)];
 
 T readEnum<T extends Enum>(List<T> values, dynamic v, T fallback) {
   for (final e in values) {
@@ -32,7 +35,11 @@ T? readEnumOrNull<T extends Enum>(List<T> values, dynamic v) {
 }
 
 String initialsOf(String name) {
-  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((p) => p.isNotEmpty)
+      .toList();
   if (parts.isEmpty) return '?';
   // Malay names: "Zainab binti Ahmad" -> ZA (skip bin/binti/a/l/a/p).
   const skip = {'bin', 'binti', 'a/l', 'a/p', 'b.', 'bt.'};

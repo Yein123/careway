@@ -3,7 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('wire strings are snake_case and round-trip', () {
-    expect(BookingStatus.fromWire('pending_caregiver'), BookingStatus.pendingCaregiver);
+    expect(
+      BookingStatus.fromWire('pending_caregiver'),
+      BookingStatus.pendingCaregiver,
+    );
     expect(BookingStatus.awaitingPayment.wire, 'awaiting_payment');
     for (final s in BookingStatus.values) {
       expect(BookingStatus.fromWire(s.wire), s);
@@ -36,8 +39,14 @@ void main() {
     for (final to in BookingStatus.values) {
       expect(canTransition(BookingStatus.completed, to), isFalse);
     }
-    expect(canTransition(BookingStatus.inProgress, BookingStatus.cancelled), isFalse);
-    expect(canTransition(BookingStatus.draft, BookingStatus.confirmed), isFalse);
+    expect(
+      canTransition(BookingStatus.inProgress, BookingStatus.cancelled),
+      isFalse,
+    );
+    expect(
+      canTransition(BookingStatus.draft, BookingStatus.confirmed),
+      isFalse,
+    );
   });
 
   test('terminal states', () {

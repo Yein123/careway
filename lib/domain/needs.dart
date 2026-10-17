@@ -36,7 +36,11 @@ enum CertType {
 }
 
 class Requirements {
-  const Requirements({required this.skills, required this.certs, this.language});
+  const Requirements({
+    required this.skills,
+    required this.certs,
+    this.language,
+  });
 
   final Set<Skill> skills;
   final Set<CertType> certs;
@@ -60,7 +64,8 @@ Requirements deriveRequirements({
     skills.add(Skill.transfer);
     certs.add(CertType.patientHandling);
   }
-  if (mobility == Mobility.wheelchair || addons.contains(Addon.wheelchairOnArrival)) {
+  if (mobility == Mobility.wheelchair ||
+      addons.contains(Addon.wheelchairOnArrival)) {
     skills.add(Skill.wheelchair);
   }
   if (patientAge < 18) {
@@ -68,7 +73,9 @@ Requirements deriveRequirements({
     certs.add(CertType.paediatric);
   }
   if (addons.contains(Addon.consultSitIn)) skills.add(Skill.consultSitIn);
-  if (delivery || addons.contains(Addon.medicineCollection)) skills.add(Skill.medicineCollection);
+  if (delivery || addons.contains(Addon.medicineCollection)) {
+    skills.add(Skill.medicineCollection);
+  }
   return Requirements(
     skills: skills,
     certs: certs,
@@ -77,4 +84,5 @@ Requirements deriveRequirements({
 }
 
 /// Level 1 excludes lifting/transfer help, and children always get Level 2.
-bool level1Allowed(Mobility mobility, int age) => mobility != Mobility.transfer && age >= 18;
+bool level1Allowed(Mobility mobility, int age) =>
+    mobility != Mobility.transfer && age >= 18;

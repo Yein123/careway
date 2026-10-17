@@ -17,10 +17,15 @@ class FirestoreNotificationRepo implements NotificationRepo {
       .orderBy('createdAt', descending: true)
       .limit(100)
       .snapshots()
-      .map((q) => [for (final d in q.docs) AppNotification.fromMap(d.id, d.data())]);
+      .map(
+        (q) => [
+          for (final d in q.docs) AppNotification.fromMap(d.id, d.data()),
+        ],
+      );
 
   @override
-  Future<void> markRead(String uid, String nid) => _db.doc('users/$uid/notifications/$nid').update({'read': true});
+  Future<void> markRead(String uid, String nid) =>
+      _db.doc('users/$uid/notifications/$nid').update({'read': true});
 }
 
 abstract class ReceiptRepo {

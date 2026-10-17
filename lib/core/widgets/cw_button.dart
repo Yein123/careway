@@ -41,11 +41,20 @@ class CwButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Flexible(child: Text(label, textAlign: TextAlign.center)),
-              if (trailing != null) ...[const SizedBox(width: 10), Icon(trailing, size: 22)],
+              if (trailing != null) ...[
+                const SizedBox(width: 10),
+                Icon(trailing, size: 22),
+              ],
             ],
           );
-    const shape = RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16)));
-    const textStyle = TextStyle(fontFamily: cwFont, fontSize: 17, fontWeight: FontWeight.w800);
+    const shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(16)),
+    );
+    const textStyle = TextStyle(
+      fontFamily: cwFont,
+      fontSize: 17,
+      fontWeight: FontWeight.w800,
+    );
     final action = loading ? null : onPressed;
     switch (kind) {
       case CwButtonKind.primary:
@@ -58,7 +67,9 @@ class CwButton extends StatelessWidget {
               backgroundColor: accent,
               foregroundColor: CwColors.white,
               disabledBackgroundColor: loading ? accent : CwColors.line,
-              disabledForegroundColor: loading ? CwColors.white : CwColors.muted,
+              disabledForegroundColor: loading
+                  ? CwColors.white
+                  : CwColors.muted,
               shape: shape,
               textStyle: textStyle,
             ),

@@ -30,7 +30,9 @@ class CwTopBar extends StatelessWidget {
             SquareIconButton(
               icon: Icons.chevron_left,
               label: 'Back',
-              onTap: onBack ?? () => context.canPop() ? context.pop() : context.go('/'),
+              onTap:
+                  onBack ??
+                  () => context.canPop() ? context.pop() : context.go('/'),
             ),
             const SizedBox(width: 12),
           ],
@@ -38,7 +40,12 @@ class CwTopBar extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: CwText.h2, maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(
+                  title,
+                  style: CwText.h2,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 if (stepLabel != null) Text(stepLabel!, style: CwText.small),
               ],
             ),
@@ -51,7 +58,14 @@ class CwTopBar extends StatelessWidget {
 }
 
 class SquareIconButton extends StatelessWidget {
-  const SquareIconButton({super.key, required this.icon, required this.label, this.onTap, this.color, this.badge});
+  const SquareIconButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.color,
+    this.badge,
+  });
 
   final IconData icon;
   final String label;
@@ -82,10 +96,22 @@ class SquareIconButton extends StatelessWidget {
                     right: 6,
                     child: Container(
                       key: const ValueKey('icon-badge'),
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(color: CwColors.pink, borderRadius: BorderRadius.circular(8)),
-                      child: Text('$badge',
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: CwColors.white)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: CwColors.pink,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$badge',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: CwColors.white,
+                        ),
+                      ),
                     ),
                   ),
               ],

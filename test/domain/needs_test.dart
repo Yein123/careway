@@ -9,15 +9,14 @@ Requirements req({
   Set<Addon> addons = const {},
   String? language,
   bool delivery = false,
-}) =>
-    deriveRequirements(
-      level: level,
-      mobility: mobility,
-      patientAge: age,
-      addons: addons,
-      language: language,
-      delivery: delivery,
-    );
+}) => deriveRequirements(
+  level: level,
+  mobility: mobility,
+  patientAge: age,
+  addons: addons,
+  language: language,
+  delivery: delivery,
+);
 
 void main() {
   test('basic level 1 needs only first aid', () {
@@ -28,7 +27,10 @@ void main() {
   });
 
   test('level 2 needs a trained escort', () {
-    expect(req(level: 2).certs, containsAll([CertType.firstAid, CertType.trainedEscort]));
+    expect(
+      req(level: 2).certs,
+      containsAll([CertType.firstAid, CertType.trainedEscort]),
+    );
   });
 
   test('transfer needs transfer skill and patient handling cert', () {
@@ -38,8 +40,14 @@ void main() {
   });
 
   test('wheelchair mobility or add-on needs wheelchair skill', () {
-    expect(req(mobility: Mobility.wheelchair).skills, contains(Skill.wheelchair));
-    expect(req(addons: {Addon.wheelchairOnArrival}).skills, contains(Skill.wheelchair));
+    expect(
+      req(mobility: Mobility.wheelchair).skills,
+      contains(Skill.wheelchair),
+    );
+    expect(
+      req(addons: {Addon.wheelchairOnArrival}).skills,
+      contains(Skill.wheelchair),
+    );
   });
 
   test('child needs paediatric skill and cert', () {
@@ -49,8 +57,14 @@ void main() {
   });
 
   test('add-ons map to skills and language', () {
-    expect(req(addons: {Addon.consultSitIn}).skills, contains(Skill.consultSitIn));
-    expect(req(addons: {Addon.medicineCollection}).skills, contains(Skill.medicineCollection));
+    expect(
+      req(addons: {Addon.consultSitIn}).skills,
+      contains(Skill.consultSitIn),
+    );
+    expect(
+      req(addons: {Addon.medicineCollection}).skills,
+      contains(Skill.medicineCollection),
+    );
     expect(req(delivery: true).skills, contains(Skill.medicineCollection));
     expect(req(addons: {Addon.language}, language: 'Tamil').language, 'Tamil');
   });

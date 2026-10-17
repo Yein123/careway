@@ -42,9 +42,9 @@ class CwTheme {
       scaffoldBackgroundColor: CwColors.surface,
     );
     OutlineInputBorder border(Color c) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: c, width: 2),
-        );
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide(color: c, width: 2),
+    );
     return base.copyWith(
       textTheme: base.textTheme.apply(
         bodyColor: CwColors.ink,
@@ -60,26 +60,61 @@ class CwTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: CwColors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 16,
+        ),
         border: border(CwColors.line),
         enabledBorder: border(CwColors.line),
         focusedBorder: border(CwColors.primary),
         errorBorder: border(CwColors.pink),
       ),
-      snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
+      snackBarTheme: const SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }
 
 /// Text styles matching the design's sizes.
 class CwText {
-  static const h1 = TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.4, color: CwColors.ink);
-  static const h2 = TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: CwColors.ink);
-  static const h3 = TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: CwColors.ink);
+  static const h1 = TextStyle(
+    fontSize: 26,
+    fontWeight: FontWeight.w800,
+    letterSpacing: -0.4,
+    color: CwColors.ink,
+  );
+  static const h2 = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.w800,
+    color: CwColors.ink,
+  );
+  static const h3 = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w800,
+    color: CwColors.ink,
+  );
   static const body = TextStyle(fontSize: 15, height: 1.5, color: CwColors.ink);
-  static const bodyBold = TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: CwColors.ink);
-  static const muted = TextStyle(fontSize: 14, height: 1.5, color: CwColors.muted);
+  static const bodyBold = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w700,
+    color: CwColors.ink,
+  );
+  static const muted = TextStyle(
+    fontSize: 14,
+    height: 1.5,
+    color: CwColors.muted,
+  );
   static const small = TextStyle(fontSize: 13, color: CwColors.muted);
-  static const label = TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: CwColors.ink);
-  static const overline = TextStyle(fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 0.6, color: CwColors.primary);
+  static const label = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w800,
+    color: CwColors.ink,
+  );
+  static const overline = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w800,
+    letterSpacing: 0.6,
+    color: CwColors.primary,
+  );
 }

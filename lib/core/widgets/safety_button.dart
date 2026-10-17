@@ -10,9 +10,9 @@ class SafetyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SquareIconButton(
-        icon: Icons.shield_outlined,
-        label: 'Help and safety',
-        color: CwColors.pink,
-        onTap: () => context.go('/account?section=safety'),
-      );
+    icon: Icons.shield_outlined,
+    label: 'Help and safety',
+    color: CwColors.pink,
+    onTap: () => context.go('/account?section=safety'),
+  );
 }
