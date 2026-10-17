@@ -6,6 +6,8 @@ import '../data/models/user.dart';
 import '../data/providers.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/family/family_screen.dart';
+import '../features/home/home_screen.dart';
+import '../features/notifications/notifications_screen.dart';
 import '../features/family/patient_profile_screen.dart';
 import '../features/onboarding/get_started_screen.dart';
 import '../features/onboarding/welcome_screen.dart';
@@ -50,6 +52,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', builder: (_, _) => const WelcomeScreen()),
       GoRoute(path: '/start', builder: (_, _) => const GetStartedScreen()),
       GoRoute(path: '/signin', builder: (_, _) => const SignInScreen()),
+      GoRoute(path: '/notifications', builder: (_, _) => const NotificationsScreen()),
       GoRoute(
         path: '/cg/signin',
         builder: (_, _) => const SignInScreen(caregiver: true),
@@ -59,10 +62,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           StatefulShellBranch(
             routes: [
-              GoRoute(
-                path: '/home',
-                builder: (_, _) => const PlaceholderTab('Home'),
-              ),
+              GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
             ],
           ),
           StatefulShellBranch(
