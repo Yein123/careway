@@ -253,6 +253,8 @@ class Booking {
     this.caregiverId,
     this.caregiverName,
     this.caregiverPhone,
+    this.caregiverSkills = const [],
+    this.caregiverLanguages = const [],
     this.offerCaregiverName,
     this.offerExpiresAt,
     this.notMatchedReason,
@@ -286,6 +288,8 @@ class Booking {
   final String? caregiverId;
   final String? caregiverName;
   final String? caregiverPhone;
+  final List<String> caregiverSkills;
+  final List<String> caregiverLanguages;
 
   /// Name of the caregiver the current open offer went to, and when it expires.
   final String? offerCaregiverName;
@@ -333,6 +337,8 @@ class Booking {
     caregiverId: m['caregiverId'] as String?,
     caregiverName: m['caregiverName'] as String?,
     caregiverPhone: m['caregiverPhone'] as String?,
+    caregiverSkills: readStrings(m['caregiverSkills']),
+    caregiverLanguages: readStrings(m['caregiverLanguages']),
     offerCaregiverName: m['offerCaregiverName'] as String?,
     offerExpiresAt: readDate(m['offerExpiresAt']),
     notMatchedReason: m['notMatchedReason'] as String?,
@@ -371,6 +377,8 @@ class Booking {
     'caregiverId': caregiverId,
     'caregiverName': caregiverName,
     'caregiverPhone': caregiverPhone,
+    'caregiverSkills': caregiverSkills,
+    'caregiverLanguages': caregiverLanguages,
     'offerCaregiverName': offerCaregiverName,
     'offerExpiresAt': writeDate(offerExpiresAt),
     'notMatchedReason': notMatchedReason,

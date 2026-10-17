@@ -49,6 +49,9 @@ Booking booking({
   String? notMatchedReason,
   DateTime? offerExpiresAt,
   String? offerCaregiverName,
+  List<String> caregiverSkills = const ['wheelchair', 'medicineCollection'],
+  List<String> caregiverLanguages = const ['Malay', 'English'],
+  bool waitlist = false,
 }) =>
     Booking(
       id: id,
@@ -65,6 +68,10 @@ Booking booking({
       status: status,
       caregiverId: caregiverName == null ? null : 'cg1',
       caregiverName: caregiverName,
+      caregiverSkills: caregiverSkills,
+      caregiverLanguages: caregiverLanguages,
+      waitlist: waitlist,
+      lockAt: (apptAt ?? appt).subtract(const Duration(hours: 25, minutes: 15)),
       steps: steps,
       price: price,
       summary: summary,

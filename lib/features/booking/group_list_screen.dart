@@ -26,14 +26,17 @@ const _newGroupOffsets = [90, 75, 60];
 
 /// 5 · Group list (Groups.dc.html)
 class GroupListScreen extends ConsumerStatefulWidget {
-  const GroupListScreen({super.key});
+  const GroupListScreen({super.key, this.startNew = false});
+
+  /// Preselect "Start a new group" (from Group not found).
+  final bool startNew;
 
   @override
   ConsumerState<GroupListScreen> createState() => _GroupListScreenState();
 }
 
 class _GroupListScreenState extends ConsumerState<GroupListScreen> {
-  String? _pick; // group id or 'new'
+  late String? _pick = widget.startNew ? 'new' : null; // group id or 'new'
   String _newPoint = pickupPoints.first.id;
   int _newOffset = 75;
   bool _busy = false;

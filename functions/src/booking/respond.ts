@@ -48,6 +48,9 @@ export async function respondToOfferLogic(
       caregiverId: uid,
       caregiverName: cg.displayName ?? uid,
       caregiverPhone: cg.phone ?? '',
+      // Guardians can't read caregiver profiles; the package screen needs these to offer add-ons.
+      caregiverSkills: cg.skills ?? [],
+      caregiverLanguages: cg.languages ?? [],
       acceptedAt: ts(now),
       currentOfferId: null,
       offerExpiresAt: null,

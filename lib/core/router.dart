@@ -8,7 +8,13 @@ import '../features/auth/sign_in_screen.dart';
 import '../features/booking/book_screen.dart';
 import '../features/booking/choose_help_screen.dart';
 import '../features/booking/escort_review_screen.dart';
+import '../features/booking/confirmed_screen.dart';
 import '../features/booking/group_list_screen.dart';
+import '../features/booking/not_found_screen.dart';
+import '../features/booking/package_screen.dart';
+import '../features/booking/payment_screen.dart';
+import '../features/booking/pending_screen.dart';
+import '../features/booking/upcoming_screen.dart';
 import '../features/family/family_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/notifications/notifications_screen.dart';
@@ -62,16 +68,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, s) => BookScreen(service: s.uri.queryParameters['service']),
         routes: [
           GoRoute(path: 'help', builder: (_, _) => const ChooseHelpScreen()),
-          GoRoute(path: 'groups', builder: (_, _) => const GroupListScreen()),
+          GoRoute(path: 'groups', builder: (_, s) => GroupListScreen(startNew: s.uri.queryParameters['new'] == '1')),
           GoRoute(path: 'escort', builder: (_, _) => const EscortReviewScreen()),
-          GoRoute(path: 'not-found', builder: (_, s) => PlaceholderTab('Not found: ${s.uri.queryParameters['reason']}')),
+          GoRoute(path: 'not-found', builder: (_, s) => NotFoundScreen(reason: s.uri.queryParameters['reason'])),
         ],
       ),
       GoRoute(
         path: '/booking/:id',
-        builder: (_, s) => PlaceholderTab('Booking ${s.pathParameters['id']}'),
+        builder: (_, s) => UpcomingScreen(bookingId: s.pathParameters['id']!),
         routes: [
-          GoRoute(path: 'pending', builder: (_, s) => PlaceholderTab('Pending ${s.pathParameters['id']}')),
+          GoRoute(path: 'pending', builder: (_, s) => PendingScreen(bookingId: s.pathParameters['id']!)),
+          GoRoute(path: 'package', builder: (_, s) => PackageScreen(bookingId: s.pathParameters['id']!)),
+          GoRoute(path: 'not-found', builder: (_, s) => NotFoundScreen(bookingId: s.pathParameters['id']!)),
+          GoRoute(path: 'pay', builder: (_, s) => PaymentScreen(bookingId: s.pathParameters['id']!)),
+          GoRoute(path: 'confirmed', builder: (_, s) => ConfirmedScreen(bookingId: s.pathParameters['id']!)),
         ],
       ),
       GoRoute(
