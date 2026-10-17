@@ -48,6 +48,13 @@ final receiptRepoProvider = Provider<ReceiptRepo>(
 /// Current time; overridden in tests.
 final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
+/// Current time, re-emitted every 30 seconds (countdowns). Overridden in tests.
+final tickProvider = StreamProvider<DateTime>((ref) async* {
+  final clock = ref.watch(clockProvider);
+  yield clock();
+  yield* Stream.periodic(const Duration(seconds: 30), (_) => clock());
+});
+
 /// Signed-in uid, or null.
 final authStateProvider = StreamProvider<String?>(
   (ref) => ref.watch(authRepoProvider).authState,

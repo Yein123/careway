@@ -17,6 +17,9 @@ import '../features/booking/package_screen.dart';
 import '../features/booking/payment_screen.dart';
 import '../features/booking/pending_screen.dart';
 import '../features/booking/upcoming_screen.dart';
+import '../features/caregiver/cg_home_screen.dart';
+import '../features/caregiver/cg_job_screens.dart';
+import '../features/caregiver/cg_tabs.dart';
 import '../features/delivery/delivery_request_screen.dart';
 import '../features/delivery/delivery_status_screen.dart';
 import '../features/family/family_screen.dart';
@@ -158,32 +161,29 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/cg',
-                builder: (_, _) => const PlaceholderTab('Today'),
+                builder: (_, _) => const CgHomeScreen(),
+                routes: [
+                  GoRoute(path: 'notifications', builder: (_, _) => const NotificationsScreen()),
+                  GoRoute(path: 'job/:id', builder: (_, s) => CgJobScreen(bookingId: s.pathParameters['id']!)),
+                  GoRoute(path: 'job/:id/steps', builder: (_, s) => CgStepsScreen(bookingId: s.pathParameters['id']!)),
+                  GoRoute(path: 'job/:id/summary', builder: (_, s) => CgSummaryScreen(bookingId: s.pathParameters['id']!)),
+                ],
               ),
             ],
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(
-                path: '/cg/schedule',
-                builder: (_, _) => const PlaceholderTab('Schedule'),
-              ),
+              GoRoute(path: '/cg/schedule', builder: (_, _) => const CgScheduleScreen()),
             ],
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(
-                path: '/cg/patients',
-                builder: (_, _) => const PlaceholderTab('Patients'),
-              ),
+              GoRoute(path: '/cg/patients', builder: (_, _) => const CgPatientsScreen()),
             ],
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(
-                path: '/cg/account',
-                builder: (_, _) => const PlaceholderTab('Account'),
-              ),
+              GoRoute(path: '/cg/account', builder: (_, _) => const CgAccountScreen()),
             ],
           ),
         ],

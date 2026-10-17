@@ -32,14 +32,3 @@ class CaregiverShell extends StatelessWidget {
     ),
   );
 }
-
-/// Temporary tab body until the feature screen exists.
-class PlaceholderTab extends StatelessWidget {
-  const PlaceholderTab(this.title, {super.key});
-  final String title;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(child: Center(child: Text(title))),
-  );
-}

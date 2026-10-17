@@ -25,6 +25,7 @@ Future<ProviderContainer> pumpApp(
       ...fakes.overrides,
       careWayApiProvider.overrideWithValue(api ?? FakeApi()),
       if (now != null) clockProvider.overrideWithValue(() => now),
+    tickProvider.overrideWith((ref) => Stream.value(now ?? DateTime.now())),
     ],
   );
   addTearDown(container.dispose);
