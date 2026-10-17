@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../data/models/user.dart';
 import '../data/providers.dart';
+import '../features/account/account_screen.dart';
+import '../features/account/account_subpages.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/booking/book_screen.dart';
 import '../features/booking/choose_help_screen.dart';
@@ -135,7 +137,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/account',
-                builder: (_, _) => const PlaceholderTab('Account'),
+                builder: (_, s) => AccountScreen(section: s.uri.queryParameters['section']),
+                routes: [
+                  GoRoute(path: 'payments', builder: (_, _) => const PaymentsScreen()),
+                  GoRoute(path: 'receipts', builder: (_, _) => const ReceiptsScreen()),
+                  GoRoute(path: 'places', builder: (_, _) => const PlacesScreen()),
+                  GoRoute(path: 'notifications', builder: (_, _) => const NotificationSettingsScreen()),
+                  GoRoute(path: 'language', builder: (_, _) => const LanguageScreen()),
+                  GoRoute(path: 'privacy', builder: (_, _) => const PrivacyScreen()),
+                ],
               ),
             ],
           ),
