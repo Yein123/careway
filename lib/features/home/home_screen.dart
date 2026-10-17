@@ -17,6 +17,7 @@ import '../../core/widgets/step_label.dart';
 import '../../data/models/booking.dart';
 import '../../data/providers.dart';
 import '../../domain/booking_status.dart';
+import '../booking/booking_draft.dart';
 
 String placeName(String hospitalId) {
   try {
@@ -94,7 +95,7 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 4),
             const Text('Helper + ride, no leave needed', style: TextStyle(fontSize: 14, color: Color(0xFFE4DCFB))),
             const SizedBox(height: 14),
-            CwButton(label: 'Book a visit', color: CwColors.white, onPressed: () => context.push('/book')),
+            CwButton(label: 'Book a visit', color: CwColors.white, onPressed: () => startBooking(context, ref)),
           ]),
         ),
         const Gap(20),
@@ -106,9 +107,9 @@ class HomeScreen extends ConsumerWidget {
         const SectionTitle('Services'),
         _TileRow([
           _ServiceTile(Icons.directions_bus_outlined, 'Shared ride + guidance', 'Level 1', CwColors.primary,
-              () => context.push('/book?service=level1')),
+              () => startBooking(context, ref, level: 1)),
           _ServiceTile(Icons.accessibility_new_rounded, 'One-to-one escort', 'Level 2', CwColors.teal,
-              () => context.push('/book?service=level2')),
+              () => startBooking(context, ref, level: 2)),
         ]),
         const Gap(10),
         _TileRow([

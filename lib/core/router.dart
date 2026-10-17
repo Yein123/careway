@@ -5,6 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../data/models/user.dart';
 import '../data/providers.dart';
 import '../features/auth/sign_in_screen.dart';
+import '../features/booking/book_screen.dart';
+import '../features/booking/choose_help_screen.dart';
+import '../features/booking/escort_review_screen.dart';
+import '../features/booking/group_list_screen.dart';
 import '../features/family/family_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/notifications/notifications_screen.dart';
@@ -53,6 +57,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/start', builder: (_, _) => const GetStartedScreen()),
       GoRoute(path: '/signin', builder: (_, _) => const SignInScreen()),
       GoRoute(path: '/notifications', builder: (_, _) => const NotificationsScreen()),
+      GoRoute(
+        path: '/book',
+        builder: (_, s) => BookScreen(service: s.uri.queryParameters['service']),
+        routes: [
+          GoRoute(path: 'help', builder: (_, _) => const ChooseHelpScreen()),
+          GoRoute(path: 'groups', builder: (_, _) => const GroupListScreen()),
+          GoRoute(path: 'escort', builder: (_, _) => const EscortReviewScreen()),
+          GoRoute(path: 'not-found', builder: (_, s) => PlaceholderTab('Not found: ${s.uri.queryParameters['reason']}')),
+        ],
+      ),
+      GoRoute(
+        path: '/booking/:id',
+        builder: (_, s) => PlaceholderTab('Booking ${s.pathParameters['id']}'),
+        routes: [
+          GoRoute(path: 'pending', builder: (_, s) => PlaceholderTab('Pending ${s.pathParameters['id']}')),
+        ],
+      ),
       GoRoute(
         path: '/cg/signin',
         builder: (_, _) => const SignInScreen(caregiver: true),
