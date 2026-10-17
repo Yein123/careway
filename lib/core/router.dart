@@ -15,6 +15,8 @@ import '../features/booking/package_screen.dart';
 import '../features/booking/payment_screen.dart';
 import '../features/booking/pending_screen.dart';
 import '../features/booking/upcoming_screen.dart';
+import '../features/delivery/delivery_request_screen.dart';
+import '../features/delivery/delivery_status_screen.dart';
 import '../features/family/family_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/notifications/notifications_screen.dart';
@@ -65,6 +67,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/start', builder: (_, _) => const GetStartedScreen()),
       GoRoute(path: '/signin', builder: (_, _) => const SignInScreen()),
       GoRoute(path: '/notifications', builder: (_, _) => const NotificationsScreen()),
+      GoRoute(path: '/delivery/new', builder: (_, _) => const DeliveryRequestScreen()),
+      GoRoute(
+        path: '/delivery/:id',
+        builder: (_, s) => DeliveryStatusScreen(deliveryId: s.pathParameters['id']!),
+        routes: [
+          GoRoute(path: 'live', builder: (_, s) => DeliveryStatusScreen(deliveryId: s.pathParameters['id']!)),
+          GoRoute(path: 'done', builder: (_, s) => DeliveryStatusScreen(deliveryId: s.pathParameters['id']!)),
+          GoRoute(path: 'thanks', builder: (_, s) => DeliveryThanksScreen(deliveryId: s.pathParameters['id']!)),
+        ],
+      ),
       GoRoute(
         path: '/book',
         builder: (_, s) => BookScreen(service: s.uri.queryParameters['service']),

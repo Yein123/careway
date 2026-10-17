@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'models/booking.dart';
 import 'models/caregiver.dart';
+import 'models/delivery.dart';
 import 'models/family.dart';
 import 'models/notification.dart';
 import 'models/user.dart';
@@ -100,4 +101,8 @@ final familyBookingsProvider = StreamProvider<List<Booking>>((ref) {
 
 final bookingProvider = StreamProvider.family<Booking?, String>(
   (ref, id) => ref.watch(bookingRepoProvider).watch(id),
+);
+
+final deliveryProvider = StreamProvider.family<MedDelivery?, String>(
+  (ref, id) => ref.watch(deliveryRepoProvider).watch(id),
 );
