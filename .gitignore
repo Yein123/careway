@@ -27,3 +27,9 @@
 lib/firebase_options.dart
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
+
+# Editor / tool caches and build output
+.dide/
+android/build/
+firestore-debug.log
+firebase-debug.log
