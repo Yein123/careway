@@ -43,6 +43,7 @@ BookingDraft draftFromBooking(Booking b, BookingDraft current) {
 }
 
 bool afterLock(Booking b, DateTime now) {
+  if (b.groupId != null && b.lockAt == null) return false;
   final lockAt = b.lockAt ?? b.apptAt.subtract(const Duration(hours: 24));
   return !now.isBefore(lockAt);
 }

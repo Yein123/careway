@@ -44,9 +44,11 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
     final draft = ref.watch(bookingDraftProvider);
     final patient = draftPatient(ref);
     final now = ref.watch(clockProvider)();
-    final groups = draft.hospitalId == null || draft.dateKey == null
+    final allGroups = draft.hospitalId == null || draft.dateKey == null
         ? const AsyncValue<List<Group>>.data([])
         : ref.watch(_dayGroupsProvider((draft.hospitalId!, draft.dateKey!)));
+    // A group whose pickup time has passed can no longer be joined.
+    final groups = allGroups.whenData((l) => [for (final g in l) if (g.pickupAt.isAfter(now)) g]);
     final list = groups.value ?? const <Group>[];
     final best = _best(list, now);
     // Preselect the best match the first time groups arrive.

@@ -38,7 +38,7 @@ class _BookScreenState extends ConsumerState<BookScreen> {
   @override
   void initState() {
     super.initState();
-    final first = ref.read(clockProvider)().toLocal().add(const Duration(days: 1));
+    final first = ref.read(clockProvider)().toLocal();
     _month = DateTime(first.year, first.month);
     final pref = switch (widget.service) { 'level1' => 1, 'level2' => 2, _ => null };
     if (pref != null) {
@@ -254,7 +254,6 @@ class _BookScreenState extends ConsumerState<BookScreen> {
               onMonth: (m) => setState(() => _month = m),
               onPick: (d) {
                 _set((x) => x.copyWith(date: d));
-                setState(() => _calOpen = false);
               },
             ),
         ]),
@@ -309,7 +308,7 @@ class _BookScreenState extends ConsumerState<BookScreen> {
             CwIcon('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>', size: 18, strokeWidth: 2.2, color: CwColors.primary),
             SizedBox(width: 10),
             Expanded(
-              child: Text('Book at least 24 hours ahead so we can match neighbours going to the same clinic.',
+              child: Text('Same-day visits can be booked while the pickup time is still ahead.',
                   style: TextStyle(fontSize: 12, height: 1.45, color: Color(0xFF3A2591))),
             ),
           ]),
@@ -578,7 +577,7 @@ class _Calendar extends StatelessWidget {
             ]),
           ),
         const SizedBox(height: 8),
-        const Text('Greyed-out dates are less than 24 hours away.', style: TextStyle(fontSize: 11, color: CwColors.muted)),
+        const Text('Greyed-out dates are in the past.', style: TextStyle(fontSize: 11, color: CwColors.muted)),
       ]),
     );
   }

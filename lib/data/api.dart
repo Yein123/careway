@@ -19,7 +19,7 @@ String friendlyError(Object e) {
       'group-full' => 'This group is full.',
       'offer-expired' => 'This request expired.',
       'off-duty' => 'Go on duty to accept requests.',
-      'too-soon' => 'Book at least 24 hours ahead.',
+      'too-soon' => 'That time has already passed.',
       'level1-not-allowed' => 'This patient needs a Level 2 escort.',
       'no-patient' => 'Add who is going first.',
       'not-payable' => 'This booking is no longer waiting for payment.',

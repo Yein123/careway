@@ -8,6 +8,7 @@ import 'package:careway/features/booking/booking_draft.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 
 import '../fakes/fake_api.dart';
 import '../helpers/fixtures.dart';
@@ -17,13 +18,13 @@ final apptLocal = appt.toLocal();
 final dayKey =
     '${apptLocal.year}-${apptLocal.month.toString().padLeft(2, '0')}-${apptLocal.day.toString().padLeft(2, '0')}';
 
-Group group(String id, int riders, {String point = 'elmina-lakeside', GroupStatus status = GroupStatus.open}) => Group(
+Group group(String id, int riders, {String point = 'elmina-lakeside', GroupStatus status = GroupStatus.open, DateTime? pickupAt}) => Group(
       id: id,
       hospitalId: 'hsb',
       clinic: 'Orthopaedic specialist clinic',
       date: dayKey,
       pickupPointId: point,
-      pickupAt: appt.subtract(const Duration(minutes: 75)),
+      pickupAt: pickupAt ?? appt.subtract(const Duration(minutes: 75)),
       apptWindow: '8:45–9:30',
       status: status,
       lockAt: appt.subtract(const Duration(hours: 25)),
@@ -70,14 +71,38 @@ void main() {
     expect(tester.widget<FilledButton>(_filled('Next: choose help')).onPressed, isNull, reason: 'place and time still missing');
   });
 
-  testWidgets('a date less than 24 hours away is disabled', (tester) async {
+  testWidgets('today is bookable and a past day is disabled', (tester) async {
     await pumpApp(tester, guardianFakes(), at: '/book', now: now);
     final local = now.toLocal();
     String key(DateTime d) => 'day-${d.year}-${d.month}-${d.day}';
-    final tomorrow = DateTime(local.year, local.month, local.day + 1);
-    final dayAfter = DateTime(local.year, local.month, local.day + 2);
-    expect(tester.widget<InkWell>(find.byKey(ValueKey(key(tomorrow)))).onTap, isNull);
-    expect(tester.widget<InkWell>(find.byKey(ValueKey(key(dayAfter)))).onTap, isNotNull);
+    final today = DateTime(local.year, local.month, local.day);
+    final yesterday = DateTime(local.year, local.month, local.day - 1);
+    expect(tester.widget<InkWell>(find.byKey(ValueKey(key(today)))).onTap, isNotNull);
+    expect(tester.widget<InkWell>(find.byKey(ValueKey(key(yesterday)))).onTap, isNull);
+  });
+
+  testWidgets('calendar stays open after picking a date', (tester) async {
+    await pumpApp(tester, guardianFakes(), at: '/book', now: now);
+    final local = now.toLocal();
+    final today = DateTime(local.year, local.month, local.day);
+    final header = find.text(DateFormat('MMMM yyyy').format(today));
+    expect(header, findsOneWidget);
+    await tester.tap(find.byKey(ValueKey('day-${today.year}-${today.month}-${today.day}')));
+    await tester.pumpAndSettle();
+    expect(header, findsOneWidget);
+  });
+
+  testWidgets('group list hides a group whose pickup has passed', (tester) async {
+    final fakes = guardianFakes()
+      ..group.groups.set([
+        group('past', 1, pickupAt: now.subtract(const Duration(minutes: 10))),
+        group('soon', 1, pickupAt: now.add(const Duration(hours: 2))),
+      ]);
+    final c = await pumpApp(tester, fakes, at: '/home', now: now);
+    fillDetails(c, 'p1');
+    c.read(bookingDraftProvider.notifier).update((d) => d.copyWith(level: 1));
+    await _go(tester, c, '/book/groups');
+    expect(find.textContaining('1 group going'), findsOneWidget);
   });
 
   testWidgets('transfer patient cannot pick Level 1', (tester) async {

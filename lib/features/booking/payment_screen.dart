@@ -206,8 +206,8 @@ class _BodyState extends ConsumerState<_Body> {
           const SizedBox(height: 8),
           Text(
             l1
-                ? 'You pay ${formatRm(share!)} now for the ride. If more neighbours join before '
-                    '${dayTimeLabel(b.lockAt ?? b.apptAt.subtract(const Duration(hours: 24)))}, you get the difference back automatically. '
+                ? 'You pay ${formatRm(share!)} now for the ride. '
+                    '${b.groupId != null && b.lockAt == null ? 'When the group is set before pickup, you get the difference back automatically. ' : 'If more neighbours join before ${dayTimeLabel(b.lockAt ?? b.apptAt.subtract(const Duration(hours: 24)))}, you get the difference back automatically. '}'
                     'Waiting time is not charged. Sample prices.'
                 : 'Charged by actual time, in 30-minute steps. If the visit is shorter you get the difference back; '
                     'if longer, we ask you before adding time. Sample prices.',

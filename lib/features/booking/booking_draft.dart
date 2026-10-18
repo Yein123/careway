@@ -150,9 +150,11 @@ String slotLabel(int minutes) {
   return '${h % 12 == 0 ? 12 : h % 12}:$m ${h < 12 ? 'AM' : 'PM'}';
 }
 
-/// A day is bookable when it starts at least 24 hours from now.
-bool dayBookable(DateTime day, DateTime now) =>
-    !DateTime(day.year, day.month, day.day).isBefore(now.toLocal().add(const Duration(hours: 24)));
+/// A day is bookable from today onwards (same-day visits are allowed).
+bool dayBookable(DateTime day, DateTime now) {
+  final n = now.toLocal();
+  return !DateTime(day.year, day.month, day.day).isBefore(DateTime(n.year, n.month, n.day));
+}
 
 /// Entry point for a new booking: clears the draft and opens step 1.
 /// [patientId] prefills a follow-up visit.

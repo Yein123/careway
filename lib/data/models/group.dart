@@ -30,7 +30,7 @@ class Group {
     required this.pickupAt,
     required this.apptWindow,
     required this.status,
-    required this.lockAt,
+    this.lockAt,
     this.caregiverId,
     this.caregiverName,
     this.caregiverRating,
@@ -50,7 +50,7 @@ class Group {
   final DateTime pickupAt;
   final String apptWindow;
   final GroupStatus status;
-  final DateTime lockAt;
+  final DateTime? lockAt;
   final String? caregiverId;
   final String? caregiverName;
   final double? caregiverRating;
@@ -75,7 +75,7 @@ class Group {
     pickupAt: readDate(m['pickupAt'])!,
     apptWindow: m['apptWindow'] as String? ?? '',
     status: readEnum(GroupStatus.values, m['status'], GroupStatus.open),
-    lockAt: readDate(m['lockAt'])!,
+    lockAt: readDate(m['lockAt']),
     caregiverId: m['caregiverId'] as String?,
     caregiverName: m['caregiverName'] as String?,
     caregiverRating: (m['caregiverRating'] as num?)?.toDouble(),
