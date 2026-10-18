@@ -54,7 +54,8 @@ export async function sendPushLogic(
 export const claimPushToken = onCall((req) => claimPushTokenLogic(db(), requireAuth(req.auth), req.data));
 export const releasePushToken = onCall((req) => releasePushTokenLogic(db(), requireAuth(req.auth), req.data));
 
-export const onNotificationCreated = onDocumentCreated('users/{uid}/notifications/{nid}', async (event) => {
+// Firestore DB is nam5 (US multi-region), so the trigger must run in a compatible region, not asia-southeast1.
+export const onNotificationCreated = onDocumentCreated({ document: 'users/{uid}/notifications/{nid}', region: 'us-central1' }, async (event) => {
   const n = event.data?.data();
   if (!n) return;
   try {
