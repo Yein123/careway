@@ -258,19 +258,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: CwColors.white,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Center(
-                          child: CwIcon(
-                            '<path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1L12 21.5l8.8-8.8a5 5 0 0 0 0-7.1z"/>',
-                            strokeWidth: 2.4,
-                            color: CwColors.teal,
-                          ),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          'assets/images/careway-caregiver-icon-512.png',
+                          width: 44,
+                          height: 44,
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -412,7 +405,7 @@ class _DemoAccountsState extends ConsumerState<_DemoAccounts> {
           const Text('DEMO (debug builds only)', style: CwText.overline),
           const SizedBox(height: 6),
           const Text(
-            'Guardian: aisyah@careway.demo\nHelpers: farid@ · nurul@ · meiling@ · ravi@careway.demo\nPassword: careway123',
+            'Guardian: parent@gmail.com · user@gmail.com · self@gmail.com\nCaregiver: caregiver@gmail.com (+ farid@ · nurul@ · meiling@careway.demo)\nPassword: careway123',
             style: CwText.small,
           ),
           TextButton(

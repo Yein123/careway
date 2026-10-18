@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
-import '../art.dart';
 import '../theme.dart';
 import 'cw_top_bar.dart';
 
@@ -82,23 +80,28 @@ class Gap extends StatelessWidget {
 
 /// CareWay logo mark with wordmark.
 class CwLogo extends StatelessWidget {
-  const CwLogo({super.key, this.color = CwColors.primary, this.label});
-  final Color color;
+  const CwLogo({super.key, this.label, this.caregiver = false});
   final String? label;
+  final bool caregiver;
 
   @override
-  Widget build(BuildContext context) => Row(
+  Widget build(BuildContext context) {
+    final color = caregiver ? CwColors.teal : CwColors.primary;
+    return _build(color);
+  }
+
+  Widget _build(Color color) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Container(
-        width: 40,
-        height: 40,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(12),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.asset(
+          caregiver
+              ? 'assets/images/careway-caregiver-icon-512.png'
+              : 'assets/images/careway-icon-512-square.png',
+          width: 40,
+          height: 40,
         ),
-        child: SvgPicture.string(logoSvg, width: 24, height: 24),
       ),
       const SizedBox(width: 10),
       const Text(
