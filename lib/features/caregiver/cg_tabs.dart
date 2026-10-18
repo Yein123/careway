@@ -14,6 +14,7 @@ import '../../data/models/booking.dart';
 import '../../data/models/caregiver.dart';
 import '../../data/models/delivery.dart';
 import '../../data/providers.dart';
+import '../../data/push.dart';
 import '../home/home_screen.dart' show placeName, levelLabel, levelTone;
 import '../visits/live_visit_screen.dart' show callNumber;
 import 'cg_providers.dart';
@@ -468,7 +469,7 @@ class CgAccountScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(16),
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
-                onTap: () => ref.read(authRepoProvider).signOut(),
+                onTap: () => signOutEverywhere(ref),
                 child: const SizedBox(
                   height: 52,
                   child: Center(child: Text('Sign out', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFFA02A4C)))),

@@ -426,6 +426,7 @@ class Fakes {
 
   List<Override> get overrides => [
     authRepoProvider.overrideWithValue(auth),
+    pushServiceProvider.overrideWithValue(null),
     userRepoProvider.overrideWithValue(user),
     familyRepoProvider.overrideWithValue(family),
     bookingRepoProvider.overrideWithValue(booking),

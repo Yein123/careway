@@ -74,6 +74,10 @@ abstract class CareWayApi {
   Future<String> adminLockGroup(String groupId);
   Future<void> adminAdvanceDelivery(String id, {bool toEnd = false});
   Future<void> adminAdvanceStep(String bookingId);
+
+  // Push tokens (Android).
+  Future<void> claimPushToken(String token);
+  Future<void> releasePushToken(String token);
 }
 
 class FunctionsCareWayApi implements CareWayApi {
@@ -177,6 +181,14 @@ class FunctionsCareWayApi implements CareWayApi {
   @override
   Future<void> adminAdvanceStep(String bookingId) =>
       _call('adminAdvanceStep', {'bookingId': bookingId});
+
+  @override
+  Future<void> claimPushToken(String token) =>
+      _call('claimPushToken', {'token': token});
+
+  @override
+  Future<void> releasePushToken(String token) =>
+      _call('releasePushToken', {'token': token});
 }
 
 final careWayApiProvider = Provider<CareWayApi>(

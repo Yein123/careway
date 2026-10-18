@@ -13,6 +13,12 @@ import 'repos/booking_repo.dart';
 import 'repos/family_repo.dart';
 import 'repos/notification_repo.dart';
 import 'repos/user_repo.dart';
+import 'push.dart';
+import '../core/router.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'api.dart';
 
 final authRepoProvider = Provider<AuthRepo>(
   (ref) => FirebaseAuthRepo(FirebaseAuth.instance),
@@ -110,6 +116,21 @@ final familyBookingsProvider = StreamProvider<List<Booking>>((ref) {
   final fid = ref.watch(familyIdProvider);
   if (fid == null) return Stream.value(const []);
   return ref.watch(bookingRepoProvider).watchForFamily(fid);
+});
+
+/// Null on web (push is Android-only).
+final pushServiceProvider = Provider<PushService?>((ref) {
+  if (kIsWeb) return null;
+  final s = PushService(
+    FirebasePushPlatform(
+      FirebaseMessaging.instance,
+      FlutterLocalNotificationsPlugin(),
+    ),
+    ref.watch(careWayApiProvider),
+    (link) => ref.read(routerProvider).go(link),
+  );
+  ref.onDispose(s.dispose);
+  return s;
 });
 
 final bookingProvider = StreamProvider.family<Booking?, String>(

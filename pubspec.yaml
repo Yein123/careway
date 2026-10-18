@@ -44,6 +44,8 @@ dependencies:
   collection: ^1.19.1
   flutter_svg: ^2.3.0
   url_launcher: ^6.3.2
+  firebase_messaging: ^17.0.0
+  flutter_local_notifications: ^22.3.2
 
 dev_dependencies:
   flutter_test:

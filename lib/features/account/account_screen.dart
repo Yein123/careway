@@ -8,6 +8,7 @@ import '../../core/widgets/design_kit.dart';
 import '../../core/widgets/safety_button.dart';
 import '../../data/models/user.dart';
 import '../../data/providers.dart';
+import '../../data/push.dart';
 import '../visits/live_visit_screen.dart' show callNumber;
 
 const faqs = [
@@ -455,7 +456,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => ref.read(authRepoProvider).signOut(),
+          onTap: () => signOutEverywhere(ref),
           child: const SizedBox(
             height: 52,
             child: Center(child: Text('Sign out', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFFA02A4C)))),

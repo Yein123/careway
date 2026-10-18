@@ -98,6 +98,12 @@ class FakeApi implements CareWayApi {
   }
 
   @override
+  Future<void> claimPushToken(String token) async {
+    calls.add(('claimPushToken', token));
+    if (nextError != null) _throw();
+  }
+
+  @override
   Future<String> adminRespondOffer(String col, String id, bool accept) async {
     calls.add(('adminRespondOffer', {'col': col, 'id': id, 'accept': accept}));
     if (nextError != null) _throw();
@@ -126,6 +132,12 @@ class FakeApi implements CareWayApi {
   @override
   Future<void> adminAdvanceStep(String bookingId) async {
     calls.add(('adminAdvanceStep', bookingId));
+    if (nextError != null) _throw();
+  }
+
+  @override
+  Future<void> releasePushToken(String token) async {
+    calls.add(('releasePushToken', token));
     if (nextError != null) _throw();
   }
 

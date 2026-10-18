@@ -10,6 +10,9 @@ class CareWayApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(authStateProvider, (_, next) {
+      if (next.value != null) ref.read(pushServiceProvider)?.onSignedIn();
+    });
     final textScale = ref.watch(currentUserProvider).value?.settings.textScale ?? 1.0;
     return MaterialApp.router(
       title: 'CareWay',
