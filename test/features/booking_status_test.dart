@@ -110,4 +110,31 @@ void main() {
     expect(api.argsOf('cancelBooking'), ['b1']);
     expect(c.read(routerProvider), isNotNull);
   });
+
+  testWidgets('Cancel request asks first; Keep request does not cancel', (tester) async {
+    final api = FakeApi();
+    final fakes = _fakes(booking(status: BookingStatus.pendingCaregiver, caregiverName: null));
+    await pumpApp(tester, fakes, at: '/booking/b1/pending', now: now, api: api);
+    await scrollTo(tester, find.text('Cancel request'));
+    await tester.tap(find.text('Cancel request'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cancel this request?'), findsOneWidget);
+    await tester.tap(find.text('Keep request'));
+    await tester.pumpAndSettle();
+    expect(api.argsOf('cancelBooking'), isEmpty);
+    expect(find.text('Cancel this request?'), findsNothing);
+  });
+
+  testWidgets('Yes, cancel cancels and goes home', (tester) async {
+    final api = FakeApi();
+    final fakes = _fakes(booking(status: BookingStatus.pendingCaregiver, caregiverName: null));
+    final c = await pumpApp(tester, fakes, at: '/booking/b1/pending', now: now, api: api);
+    await scrollTo(tester, find.text('Cancel request'));
+    await tester.tap(find.text('Cancel request'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Yes, cancel'));
+    await tester.pumpAndSettle();
+    expect(api.argsOf('cancelBooking'), ['b1']);
+    expect(locationOf(c), '/home');
+  });
 }

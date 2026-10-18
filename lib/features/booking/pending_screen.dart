@@ -145,6 +145,7 @@ class _BodyState extends ConsumerState<_Body> {
                 onPressed: () async {
                   final router = GoRouter.of(context);
                   final messenger = ScaffoldMessenger.of(context);
+                  if (!await confirmCancelRequest(context)) return;
                   setState(() => _cancelling = true);
                   try {
                     await ref.read(careWayApiProvider).cancelBooking(b.id);
@@ -164,6 +165,26 @@ class _BodyState extends ConsumerState<_Body> {
             ),
     ]);
   }
+}
+
+/// Asks before cancelling a pending request; true only on "Yes, cancel".
+Future<bool> confirmCancelRequest(BuildContext context) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Cancel this request?'),
+      content: const Text("We'll stop looking for a caregiver. Nothing has been charged."),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Keep request')),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: CwColors.pink),
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: const Text('Yes, cancel'),
+        ),
+      ],
+    ),
+  );
+  return ok ?? false;
 }
 
 /// Pulsing halo with a spinning ring around the family icon.
