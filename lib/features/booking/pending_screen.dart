@@ -146,6 +146,7 @@ class _BodyState extends ConsumerState<_Body> {
                   final router = GoRouter.of(context);
                   final messenger = ScaffoldMessenger.of(context);
                   if (!await confirmCancelRequest(context)) return;
+                  if (!mounted) return;
                   setState(() => _cancelling = true);
                   try {
                     await ref.read(careWayApiProvider).cancelBooking(b.id);

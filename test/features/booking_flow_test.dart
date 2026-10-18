@@ -72,8 +72,9 @@ void main() {
   });
 
   testWidgets('today is bookable and a past day is disabled', (tester) async {
-    await pumpApp(tester, guardianFakes(), at: '/book', now: now);
-    final local = now.toLocal();
+    final morning = DateTime(2026, 10, 17, 10);
+    await pumpApp(tester, guardianFakes(), at: '/book', now: morning);
+    final local = morning;
     String key(DateTime d) => 'day-${d.year}-${d.month}-${d.day}';
     final today = DateTime(local.year, local.month, local.day);
     final yesterday = DateTime(local.year, local.month, local.day - 1);
@@ -81,9 +82,29 @@ void main() {
     expect(tester.widget<InkWell>(find.byKey(ValueKey(key(yesterday)))).onTap, isNull);
   });
 
+  testWidgets("today's time list only offers slots still ahead", (tester) async {
+    final at2pm = DateTime(2026, 10, 17, 14);
+    await pumpApp(tester, guardianFakes(), at: '/book', now: at2pm);
+    await scrollTo(tester, find.byKey(const ValueKey('day-2026-10-17')));
+    await tester.tap(find.byKey(const ValueKey('day-2026-10-17')));
+    await tester.pumpAndSettle();
+    await scrollTo(tester, find.text('Choose a time'));
+    await tester.tap(find.text('Choose a time'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(ValueKey('slot-${13 * 60 + 30}')), findsNothing);
+    expect(find.byKey(ValueKey('slot-${15 * 60 + 15}')), findsOneWidget);
+  });
+
+  testWidgets('today is not bookable after the last slot', (tester) async {
+    await pumpApp(tester, guardianFakes(), at: '/book', now: DateTime(2026, 10, 17, 17));
+    expect(tester.widget<InkWell>(find.byKey(const ValueKey('day-2026-10-17'))).onTap, isNull);
+    expect(tester.widget<InkWell>(find.byKey(const ValueKey('day-2026-10-18'))).onTap, isNotNull);
+  });
+
   testWidgets('calendar stays open after picking a date', (tester) async {
-    await pumpApp(tester, guardianFakes(), at: '/book', now: now);
-    final local = now.toLocal();
+    final morning = DateTime(2026, 10, 17, 10);
+    await pumpApp(tester, guardianFakes(), at: '/book', now: morning);
+    final local = morning;
     final today = DateTime(local.year, local.month, local.day);
     final header = find.text(DateFormat('MMMM yyyy').format(today));
     expect(header, findsOneWidget);

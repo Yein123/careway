@@ -52,7 +52,14 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
     final list = groups.value ?? const <Group>[];
     final best = _best(list, now);
     // Preselect the best match the first time groups arrive.
-    final pick = _pick ?? best?.id;
+    // New-group pickups already in the past are not offered.
+    final offsets = [
+      for (final o in _newGroupOffsets)
+        if (draft.apptAt == null || draft.apptAt!.subtract(Duration(minutes: o)).isAfter(now)) o,
+    ];
+    final newOffset = offsets.contains(_newOffset) ? _newOffset : (offsets.isEmpty ? _newOffset : offsets.first);
+    final rawPick = _pick ?? best?.id;
+    final pick = rawPick == 'new' && offsets.isEmpty ? best?.id : rawPick;
     Group? chosen;
     for (final g in list) {
       if (g.id == pick) chosen = g;
@@ -74,7 +81,7 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
       ref.read(bookingDraftProvider.notifier).update((d) => d.copyWith(
             groupId: () => isNew ? null : chosen!.id,
             newGroup: () => isNew
-                ? NewGroupChoice(pickupPointId: _newPoint, pickupAt: appt.subtract(Duration(minutes: _newOffset)))
+                ? NewGroupChoice(pickupPointId: _newPoint, pickupAt: appt.subtract(Duration(minutes: newOffset)))
                 : null,
             waitlist: full,
           ));
@@ -138,6 +145,7 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
             ],
           ]),
         ),
+        if (offsets.isNotEmpty)
         Semantics(
           button: true,
           selected: isNew,
@@ -184,10 +192,10 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
                       const Text('Pickup time', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                       const SizedBox(height: 6),
                       Wrap(spacing: 8, runSpacing: 8, children: [
-                        for (final o in _newGroupOffsets)
+                        for (final o in offsets)
                           _Choice(
                             label: draft.apptAt == null ? '$o min before' : timeLabel(draft.apptAt!.subtract(Duration(minutes: o))),
-                            on: _newOffset == o,
+                            on: newOffset == o,
                             onTap: () => setState(() => _newOffset = o),
                           ),
                       ]),

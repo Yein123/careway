@@ -70,6 +70,31 @@ void sameDayTests() {
     expect(dayBookable(DateTime(2026, 10, 16), n), isFalse);
   });
 
+  test("today's appointment slots start after now", () {
+    final n = DateTime(2026, 10, 17, 14);
+    final today = DateTime(2026, 10, 17);
+    final l2 = availableSlots(today, n, level: 2);
+    expect(l2, isNot(contains(13 * 60 + 30)));
+    expect(l2, isNot(contains(14 * 60)));
+    expect(l2, contains(15 * 60));
+    // Level 1 also needs the earliest new-group pickup (an hour before) to be ahead.
+    final l1 = availableSlots(today, n, level: 1);
+    expect(l1, isNot(contains(14 * 60 + 45)));
+    expect(l1, contains(15 * 60 + 15));
+    expect(availableSlots(DateTime(2026, 10, 18), n), appointmentSlots);
+  });
+
+  test('today is not bookable once no slot remains', () {
+    final n = DateTime(2026, 10, 17, 17);
+    expect(dayBookable(DateTime(2026, 10, 17), n), isFalse);
+    expect(dayBookable(DateTime(2026, 10, 17), n, level: 2), isFalse);
+    expect(dayBookable(DateTime(2026, 10, 18), n), isTrue);
+    // 4:00 PM: Level 2 still has 4:15 and 4:30, Level 1 has none.
+    final late = DateTime(2026, 10, 17, 16);
+    expect(dayBookable(DateTime(2026, 10, 17), late, level: 2), isTrue);
+    expect(dayBookable(DateTime(2026, 10, 17), late), isFalse);
+  });
+
   test('afterLock is false for a same-day group booking without lockAt', () {
     final b = booking(noLock: true, groupId: 'g1');
     expect(afterLock(b, b.apptAt.subtract(const Duration(hours: 1))), isFalse);

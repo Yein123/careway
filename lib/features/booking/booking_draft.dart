@@ -72,6 +72,7 @@ class BookingDraft {
     String? clinic,
     DateTime? date,
     int? minutes,
+    bool clearMinutes = false,
     int? level,
     int? preferredLevel,
     bool? needsConsult,
@@ -89,7 +90,7 @@ class BookingDraft {
         hospitalId: hospitalId ?? this.hospitalId,
         clinic: clinic ?? this.clinic,
         date: date ?? this.date,
-        minutes: minutes ?? this.minutes,
+        minutes: clearMinutes ? null : (minutes ?? this.minutes),
         level: level ?? this.level,
         preferredLevel: preferredLevel ?? this.preferredLevel,
         needsConsult: needsConsult ?? this.needsConsult,
@@ -150,11 +151,25 @@ String slotLabel(int minutes) {
   return '${h % 12 == 0 ? 12 : h % 12}:$m ${h < 12 ? 'AM' : 'PM'}';
 }
 
-/// A day is bookable from today onwards (same-day visits are allowed).
-bool dayBookable(DateTime day, DateTime now) {
+/// How long before the appointment the latest new-group pickup is (minutes).
+const newGroupMinLeadMinutes = 60;
+
+/// Slots offered on [day]. Today only keeps slots still ahead of [now]; for
+/// Level 1 the earliest new-group pickup must also still be ahead.
+List<int> availableSlots(DateTime day, DateTime now, {int level = 1}) {
   final n = now.toLocal();
-  return !DateTime(day.year, day.month, day.day).isBefore(DateTime(n.year, n.month, n.day));
+  final dayStart = DateTime(day.year, day.month, day.day);
+  if (dayStart.isBefore(DateTime(n.year, n.month, n.day))) return const [];
+  if (dayStart.isAfter(DateTime(n.year, n.month, n.day))) return appointmentSlots;
+  final lead = level == 1 ? newGroupMinLeadMinutes : 0;
+  return [
+    for (final m in appointmentSlots)
+      if (dayStart.add(Duration(minutes: m - lead)).isAfter(n)) m,
+  ];
 }
+
+/// A day is bookable from today onwards while a slot remains (same-day visits are allowed).
+bool dayBookable(DateTime day, DateTime now, {int level = 1}) => availableSlots(day, now, level: level).isNotEmpty;
 
 /// Entry point for a new booking: clears the draft and opens step 1.
 /// [patientId] prefills a follow-up visit.

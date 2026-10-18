@@ -64,6 +64,8 @@ class _BookScreenState extends ConsumerState<BookScreen> {
     final l1Allowed = patient == null || level1Allowed(patient.mobility, patient.age);
     final level = service && !l1Allowed ? 2 : selectedLevel;
 
+    final slots = draft.date == null ? appointmentSlots : availableSlots(draft.date!, now, level: level);
+
     final pickups = [
       for (final p in user?.savedPlaces ?? const [])
         PlaceRef(label: '${p.label} · ${p.address}', lat: p.lat, lng: p.lng),
@@ -251,9 +253,12 @@ class _BookScreenState extends ConsumerState<BookScreen> {
               month: _month,
               now: now,
               selected: draft.date,
+              level: level,
               onMonth: (m) => setState(() => _month = m),
               onPick: (d) {
-                _set((x) => x.copyWith(date: d));
+                // A time chosen for another day may already have passed today.
+                final stale = draft.minutes != null && !availableSlots(d, now, level: level).contains(draft.minutes);
+                _set((x) => x.copyWith(date: d, clearMinutes: stale));
               },
             ),
         ]),
@@ -273,10 +278,10 @@ class _BookScreenState extends ConsumerState<BookScreen> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(color: CwColors.white, borderRadius: BorderRadius.circular(18)),
               child: ListView.separated(
-                itemCount: appointmentSlots.length,
+                itemCount: slots.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 4),
                 itemBuilder: (_, i) {
-                  final m = appointmentSlots[i];
+                  final m = slots[i];
                   final on = draft.minutes == m;
                   return Material(
                     color: on ? CwColors.primary : Colors.transparent,
@@ -518,7 +523,8 @@ class _FieldButton extends StatelessWidget {
 }
 
 class _Calendar extends StatelessWidget {
-  const _Calendar({required this.month, required this.now, required this.selected, required this.onMonth, required this.onPick});
+  const _Calendar({required this.month, required this.now, required this.selected, required this.level, required this.onMonth, required this.onPick});
+  final int level;
   final DateTime month;
   final DateTime now;
   final DateTime? selected;
@@ -585,7 +591,7 @@ class _Calendar extends StatelessWidget {
   Widget _cell(int day, int days, DateTime localNow) {
     if (day < 1 || day > days) return const SizedBox(height: 40);
     final date = DateTime(month.year, month.month, day);
-    final enabled = dayBookable(date, now);
+    final enabled = dayBookable(date, now, level: level);
     final isSel = selected != null && selected!.year == date.year && selected!.month == date.month && selected!.day == day;
     final isToday = DateUtils.isSameDay(date, localNow);
     return Material(

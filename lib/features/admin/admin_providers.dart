@@ -19,6 +19,7 @@ const _deliveryStatuses = [
   'booked',
   'collecting',
   'at_pharmacy',
+  'collected',
   'on_the_way',
 ];
 

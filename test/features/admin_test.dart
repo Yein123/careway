@@ -82,6 +82,14 @@ void main() {
     ]);
   });
 
+  testWidgets('collected delivery row still shows Next stage and Run to delivered', (tester) async {
+    final fakes = adminFakes();
+    fakes.admin.deliveries.set([_delivery(DeliveryStatus.collected)]);
+    await pumpApp(tester, fakes, at: '/admin', api: FakeApi());
+    expect(find.text('Next stage'), findsOneWidget);
+    expect(find.text('Run to delivered'), findsOneWidget);
+  });
+
   testWidgets('Reset demo for today calls adminReset', (tester) async {
     final api = FakeApi();
     await pumpApp(tester, adminFakes(), at: '/admin', api: api);

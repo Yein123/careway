@@ -36,7 +36,7 @@ class _Item {
       col == 'bookings' && isLevel1 && status == 'confirmed' && groupId != null;
   bool get canAdvanceDelivery =>
       col == 'deliveries' &&
-      const {'booked', 'collecting', 'at_pharmacy', 'on_the_way'}.contains(status);
+      const {'booked', 'collecting', 'at_pharmacy', 'collected', 'on_the_way'}.contains(status);
 }
 
 String _statusLabel(String wire) {
