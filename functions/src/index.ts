@@ -4,7 +4,7 @@ import { setGlobalOptions } from 'firebase-functions/v2';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { db } from './db';
-import { requireAuth } from './errors';
+import { requireAdmin, requireAuth } from './errors';
 import { requestBookingLogic } from './booking/request';
 import { respondToOfferLogic } from './booking/respond';
 import { expireOffersLogic } from './booking/expire';
@@ -17,6 +17,14 @@ import { requestDeliveryLogic } from './delivery/request';
 import { payDeliveryLogic } from './delivery/pay';
 import { progressDeliveriesLogic } from './delivery/progress';
 import { seedDemoLogic } from './seed';
+import {
+  adminAdvanceDeliveryLogic,
+  adminAdvanceStepLogic,
+  adminLockGroupLogic,
+  adminNotFoundLogic,
+  adminResetLogic,
+  adminRespondOfferLogic,
+} from './admin/admin';
 
 initializeApp();
 setGlobalOptions({ region: 'asia-southeast1' });
@@ -59,3 +67,19 @@ export const seedDemo = onCall((req) => {
   if (!allowed) throw new HttpsError('permission-denied', 'Demo data can only be loaded in the emulator.');
   return seedDemoLogic(db(), getAuth(), new Date());
 });
+
+const adminCall = (fn: (data: unknown, now: Date) => Promise<unknown>) =>
+  onCall((req) => {
+    requireAdmin(req.auth);
+    return fn(req.data, new Date());
+  });
+
+export const adminReset = onCall((req) => {
+  requireAdmin(req.auth);
+  return adminResetLogic(db(), getAuth(), new Date());
+});
+export const adminRespondOffer = adminCall((d, now) => adminRespondOfferLogic(db(), d, now));
+export const adminNotFound = adminCall((d, now) => adminNotFoundLogic(db(), d, now));
+export const adminLockGroup = adminCall((d, now) => adminLockGroupLogic(db(), d, now));
+export const adminAdvanceDelivery = adminCall((d, now) => adminAdvanceDeliveryLogic(db(), d, now));
+export const adminAdvanceStep = adminCall((d, now) => adminAdvanceStepLogic(db(), d, now));

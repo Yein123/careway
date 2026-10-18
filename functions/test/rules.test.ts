@@ -119,4 +119,21 @@ describeEmu('firestore rules', () => {
     await assertSucceeds(getDocs(query(collection(as('g1'), 'receipts'), where('uid', '==', 'g1'))));
     await assertFails(getDoc(doc(as('g2'), 'receipts/r1')));
   });
+
+  test('admin token reads any booking, group, offer and family', async () => {
+    const adm = env.authenticatedContext('adm', { admin: true }).firestore();
+    await assertSucceeds(getDoc(doc(adm, 'bookings/b2')));
+    await assertSucceeds(getDoc(doc(adm, 'groups/grp')));
+    await assertSucceeds(getDoc(doc(adm, 'offers/o1')));
+    await assertSucceeds(getDoc(doc(adm, 'families/f1')));
+    await assertSucceeds(getDoc(doc(adm, 'families/f1/patients/p1')));
+    await assertSucceeds(getDoc(doc(adm, 'users/g1')));
+    await assertFails(getDoc(doc(as('g2'), 'offers/o1')));
+  });
+
+  test('admin token cannot write bookings', async () => {
+    const adm = env.authenticatedContext('adm', { admin: true }).firestore();
+    await assertFails(updateDoc(doc(adm, 'bookings/b1'), { rating: 5 }));
+    await assertFails(setDoc(doc(adm, 'bookings/b9'), { familyId: 'f1' }));
+  });
 });

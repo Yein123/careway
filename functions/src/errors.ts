@@ -17,3 +17,9 @@ export function requireAuth(auth: { uid: string } | undefined): string {
   if (!auth) throw new HttpsError('unauthenticated', 'Sign in first.');
   return auth.uid;
 }
+
+export function requireAdmin(auth: { uid: string; token?: Record<string, unknown> } | undefined): string {
+  if (!auth) throw new HttpsError('unauthenticated', 'Sign in first.');
+  if (auth.token?.admin !== true) throw new HttpsError('permission-denied', 'Admin only.');
+  return auth.uid;
+}

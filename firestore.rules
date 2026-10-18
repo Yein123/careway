@@ -9,6 +9,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
     function isSelf(uid) {
       return signedIn() && request.auth.uid == uid;
     }
@@ -23,7 +27,7 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if isSelf(uid);
+      allow read: if isSelf(uid) || isAdmin();
       allow create: if isSelf(uid) && request.resource.data.role == 'guardian';
       // Role never changes from the client. familyId may only be set once, to a
       // family this user administers (created in the same batch).
@@ -47,7 +51,7 @@ service cloud.firestore {
     }
 
     match /families/{fid} {
-      allow read: if isFamilyMember(fid);
+      allow read: if isFamilyMember(fid) || isAdmin();
       allow create: if signedIn()
         && request.resource.data.adminUid == request.auth.uid
         && request.resource.data.memberUids == [request.auth.uid];
@@ -58,7 +62,7 @@ service cloud.firestore {
       match /patients/{pid} {
         // Assigned caregivers get an access doc from functions while their
         // visit is active; removed when it completes or is cancelled.
-        allow read: if isFamilyMember(fid)
+        allow read: if isFamilyMember(fid) || isAdmin()
           || (signedIn() && exists(/databases/$(database)/documents/families/$(fid)/patients/$(pid)/access/$(request.auth.uid)));
         allow write: if isFamilyMember(fid);
 
@@ -69,25 +73,25 @@ service cloud.firestore {
     }
 
     match /bookings/{bid} {
-      allow read: if isFamilyMember(resource.data.familyId) || isSelf(resource.data.caregiverId);
+      allow read: if isFamilyMember(resource.data.familyId) || isSelf(resource.data.caregiverId) || isAdmin();
       allow update: if isFamilyMember(resource.data.familyId)
         && resource.data.status == 'completed'
         && onlyChanges(['rating']);
     }
 
     match /deliveries/{did} {
-      allow read: if isFamilyMember(resource.data.familyId) || isSelf(resource.data.caregiverId);
+      allow read: if isFamilyMember(resource.data.familyId) || isSelf(resource.data.caregiverId) || isAdmin();
       allow update: if isFamilyMember(resource.data.familyId)
         && resource.data.status == 'delivered'
         && onlyChanges(['rating']);
     }
 
     match /offers/{oid} {
-      allow read: if isSelf(resource.data.caregiverId);
+      allow read: if isSelf(resource.data.caregiverId) || isAdmin();
     }
 
     match /groups/{gid} {
-      allow read: if signedIn();
+      allow read: if signedIn() || isAdmin();
     }
 
     match /receipts/{rid} {
