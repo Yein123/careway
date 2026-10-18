@@ -61,7 +61,7 @@ gcloud auth application-default login
 node functions/scripts/grant-admin.js admin@careway.demo <password>
 ```
 
-Sign in on the web app with that account; you land on `/admin`. Press **Reset demo for today** before each run to re-seed today's groups and the scenario 3 visit.
+Open https://careway-tehwoq.web.app/admin and sign in with that account; admins always land on `/admin`. To redeploy the web app: `flutter build web --release && firebase deploy --only hosting --project careway-tehwoq`. Press **Reset demo for today** before each run to re-seed today's groups and the scenario 3 visit.
 
 Run sheet:
 
