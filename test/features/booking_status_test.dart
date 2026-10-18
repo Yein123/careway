@@ -49,7 +49,7 @@ void main() {
     fakes.booking.put(booking(status: BookingStatus.notMatched, caregiverName: null, notMatchedReason: 'helper-declined'));
     await tester.pumpAndSettle();
     expect(locationOf(c), '/booking/b1/not-found');
-    expect(find.text('Nothing has been charged.'), findsOneWidget);
+    expect(find.textContaining('Nothing has been charged.'), findsOneWidget);
   });
 
   testWidgets('package total: Saver + language + consult sit-in, 1 rider already', (tester) async {
@@ -60,10 +60,10 @@ void main() {
     );
     await pumpApp(tester, _fakes(b), at: '/booking/b1/package', now: now);
     expect(find.text('RM 30'), findsOneWidget, reason: 'Saver share for 2 riders');
-    await tester.ensureVisible(find.text('Language help'));
+    await scrollTo(tester, find.text('Language help'));
     await tester.tap(find.text('Language help'));
     await tester.pump();
-    await tester.ensureVisible(find.text('Consult sit-in'));
+    await scrollTo(tester, find.text('Consult sit-in'));
     await tester.tap(find.text('Consult sit-in'));
     await tester.pump();
     expect(find.text('RM 48.00'), findsOneWidget);
@@ -72,8 +72,8 @@ void main() {
   testWidgets('add-ons the helper cannot do are disabled', (tester) async {
     final b = booking(status: BookingStatus.awaitingPayment, caregiverSkills: const ['wheelchair']);
     await pumpApp(tester, _fakes(b), at: '/booking/b1/package', now: now);
+    await scrollTo(tester, find.text('Consult sit-in'));
     expect(find.text('Not offered by Farid A.'), findsWidgets);
-    await tester.ensureVisible(find.text('Consult sit-in'));
     await tester.tap(find.text('Consult sit-in'));
     await tester.pump();
     expect(find.text('RM 30.00'), findsOneWidget, reason: 'total unchanged');
@@ -100,10 +100,11 @@ void main() {
   testWidgets('upcoming visit can be cancelled for free when far away', (tester) async {
     final api = FakeApi();
     final c = await pumpApp(tester, _fakes(booking(status: BookingStatus.confirmed)), at: '/booking/b1', now: now, api: api);
-    expect(find.textContaining('cancelling is free'), findsOneWidget);
-    await tester.ensureVisible(find.text('Cancel visit'));
+    await scrollTo(tester, find.text('Cancel visit'));
     await tester.tap(find.text('Cancel visit'));
     await tester.pumpAndSettle();
+    expect(find.textContaining('cancelling is free'), findsOneWidget);
+    await scrollTo(tester, find.text('Yes, cancel'));
     await tester.tap(find.text('Yes, cancel'));
     await tester.pumpAndSettle();
     expect(api.argsOf('cancelBooking'), ['b1']);

@@ -13,7 +13,7 @@ void main() {
       steps: [VisitStep('picked_up', now), VisitStep('registered', now.add(const Duration(minutes: 40)))],
     );
     await pumpApp(tester, guardianFakes(bookings: [b]), at: '/booking/b1/live', now: now);
-    expect(find.text('Now: With the doctor'), findsOneWidget);
+    expect(find.text('At hospital'), findsOneWidget);
     expect(find.text('Arrived and registered'), findsOneWidget);
   });
 
@@ -34,12 +34,18 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('star-4')));
     await tester.pump();
     expect(find.text('Good'), findsOneWidget);
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('On time'));
-    await tester.tap(find.widgetWithText(FilledButton, 'Send feedback'));
+    await tester.ensureVisible(find.text('Send feedback'));
+    await tester.tap(find.text('Send feedback'));
     await tester.pumpAndSettle();
     expect(fakes.booking.ratings.single.$2.stars, 4);
     expect(fakes.booking.ratings.single.$2.tags, ['On time']);
-    expect(find.text('You rated 4'), findsOneWidget);
+    expect(find.text('Thanks for your feedback'), findsOneWidget);
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rated ★ 4'), findsOneWidget);
   });
 
   testWidgets('summary is shown for a past visit', (tester) async {
@@ -59,7 +65,7 @@ void main() {
 
   testWidgets('empty Now tab', (tester) async {
     await pumpApp(tester, guardianFakes(), at: '/visits', now: now);
-    await tester.tap(find.textContaining('Now'));
+    await tester.tap(find.textContaining('Ongoing'));
     await tester.pumpAndSettle();
     expect(find.text('Nothing happening now'), findsOneWidget);
   });

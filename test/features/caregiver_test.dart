@@ -82,7 +82,10 @@ void main() {
       Certificate(type: CertType.trainedEscort, verified: true, expiresAt: DateTime.utc(2028, 1, 1)),
     ]);
     await pumpApp(tester, cgFakes(p: p), at: '/cg/account', now: now);
-    expect(find.text('Expired'), findsOneWidget);
+    expect(find.textContaining('(expired)'), findsOneWidget);
+    await tester.tap(find.text('Certificates'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Expired 1 Jan 2026'), findsOneWidget);
     expect(find.textContaining('Expires 1 Jan 2028'), findsOneWidget);
   });
 
@@ -90,8 +93,8 @@ void main() {
     final fakes = cgFakes()..booking.put(booking(status: BookingStatus.confirmed, level: 2, groupId: null));
     final api = FakeApi();
     await pumpApp(tester, fakes, at: '/cg/job/b1/steps', now: now, api: api);
-    expect(_filled('Mark: Picked up'), findsOneWidget);
-    await tester.tap(_filled('Mark: Picked up'));
+    expect(_filled('Mark done: Picked up'), findsOneWidget);
+    await tester.tap(_filled('Mark done: Picked up'));
     await tester.pumpAndSettle();
     expect(api.argsOf('advanceStep'), ['b1']);
   });

@@ -34,18 +34,25 @@ void main() {
     await pumpApp(tester, guardianFakes(), at: '/delivery/new', now: now);
     await tester.tap(find.text('Hospital Sungai Buloh'));
     await tester.pump();
+    expect(tester.widget<FilledButton>(_filled('Calculate the fee to continue')).onPressed, isNull);
+    await scrollTo(tester, _filled('Calculate fee'));
+    await tester.tap(_filled('Calculate fee'));
+    await tester.pump();
     expect(tester.widget<FilledButton>(_filled('Tick all 3 documents to continue')).onPressed, isNull);
     for (final d in ['Appointment card or prescription slip', "Copy of Zainab's IC", 'Authorisation letter']) {
-      await tester.ensureVisible(find.text(d));
+      await scrollTo(tester, find.text(d));
       await tester.tap(find.text(d));
       await tester.pump();
     }
-    expect(tester.widget<FilledButton>(_filled('Find a helper')).onPressed, isNotNull);
+    expect(tester.widget<FilledButton>(find.ancestor(of: find.textContaining('Pay RM'), matching: find.byType(FilledButton))).onPressed, isNotNull);
   });
 
   testWidgets('fee estimate uses the distance formula, without claiming AI', (tester) async {
     await pumpApp(tester, guardianFakes(), at: '/delivery/new', now: now);
     await tester.tap(find.text('Hospital Sungai Buloh'));
+    await tester.pump();
+    await scrollTo(tester, _filled('Calculate fee'));
+    await tester.tap(_filled('Calculate fee'));
     await tester.pump();
     final km = routeKm(3.1885, 101.5165, 3.2196, 101.5826);
     final fee = deliveryFee(km);
@@ -59,16 +66,19 @@ void main() {
     final api = FakeApi();
     final c = await pumpApp(tester, guardianFakes(), at: '/delivery/new', now: now, api: api);
     await tester.tap(find.text('Hospital Sungai Buloh'));
-    for (final d in ['Appointment card or prescription slip', "Copy of Zainab's IC", 'Authorisation letter']) {
-      await tester.ensureVisible(find.text(d));
-      await tester.tap(find.text(d));
-    }
     await tester.pump();
-    await tester.ensureVisible(_filled('Find a helper'));
-    await tester.tap(_filled('Find a helper'));
+    await scrollTo(tester, _filled('Calculate fee'));
+    await tester.tap(_filled('Calculate fee'));
+    await tester.pump();
+    for (final d in ['Appointment card or prescription slip', "Copy of Zainab's IC", 'Authorisation letter']) {
+      await scrollTo(tester, find.text(d));
+      await tester.tap(find.text(d));
+      await tester.pump();
+    }
+    await tester.tap(find.textContaining('Pay RM'));
     await tester.pumpAndSettle();
     final req = api.argsOf('requestDelivery').single as Map;
-    expect((req['pharmacyId'], req['window']), ('hsb', '8:00 – 10:00 AM'));
+    expect((req['pharmacyId'], req['window'], req['method']), ('hsb', '8:00 – 10:00 AM', 'fpx'));
     expect(req['docs'], {'card': true, 'ic': true, 'letter': true});
     expect(locationOf(c), '/delivery/d-new');
   });

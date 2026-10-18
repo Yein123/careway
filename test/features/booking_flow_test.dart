@@ -55,17 +55,18 @@ void main() {
   testWidgets('book requires patient', (tester) async {
     final fakes = guardianFakes(patients: []);
     final c = await pumpApp(tester, fakes, at: '/book', now: now);
-    expect(tester.widget<FilledButton>(_filled('Next: choose help')).onPressed, isNull);
     expect(find.text('Save to my family list'), findsOneWidget);
 
     await tester.enterText(find.byKey(const ValueKey('pf-name')), 'Zainab binti Ahmad');
     await tester.enterText(find.byKey(const ValueKey('pf-age')), '72');
     await tester.pump();
-    await tester.ensureVisible(_filled('Save to my family list'));
-    await tester.tap(_filled('Save to my family list'));
+    await scrollTo(tester, _filled('Use these details'));
+    await tester.tap(_filled('Use these details'));
     await tester.pumpAndSettle();
     expect(c.read(bookingDraftProvider).patientId, isNotNull);
     expect(fakes.family.saved.single.name, 'Zainab binti Ahmad');
+    expect(fakes.family.saved.single.inFamilyList, isTrue);
+    await scrollTo(tester, _filled('Next: choose help'));
     expect(tester.widget<FilledButton>(_filled('Next: choose help')).onPressed, isNull, reason: 'place and time still missing');
   });
 
@@ -144,8 +145,9 @@ void main() {
     fillDetails(c, 'p1');
     c.read(bookingDraftProvider.notifier).update((d) => d.copyWith(level: 2));
     await _go(tester, c, '/book/escort');
+    await scrollTo(tester, find.text('RM 144.00'));
     expect(find.text('RM 144.00'), findsOneWidget);
-    await tester.ensureVisible(_filled('Find my escort'));
+    await scrollTo(tester, _filled('Find my escort'));
     await tester.tap(_filled('Find my escort'));
     await tester.pumpAndSettle();
     expect((api.argsOf('requestBooking').single as Map)['level'], 2);

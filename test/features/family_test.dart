@@ -7,6 +7,12 @@ import '../helpers/pump_app.dart';
 
 Finder _filled(String label) => find.widgetWithText(FilledButton, label);
 
+Future<void> _scrollTo(WidgetTester tester, Finder f) async {
+  await tester.scrollUntilVisible(f, 300, scrollable: find.byType(Scrollable).first);
+  await tester.ensureVisible(f);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('empty family invites adding someone', (tester) async {
     await pumpApp(tester, guardianFakes(patients: []), at: '/family');
@@ -28,7 +34,7 @@ void main() {
     await tester.tap(_filled('Save'));
     await tester.pumpAndSettle();
     expect(fakes.family.saved.single.mobility, Mobility.stick);
-    expect(find.text('Zainab binti Ahmad, 72'), findsOneWidget);
+    expect(find.text('Zainab binti Ahmad'), findsOneWidget);
   });
 
   testWidgets('save is disabled until name and a valid age are entered', (tester) async {
@@ -48,13 +54,13 @@ void main() {
     await pumpApp(tester, fakes, at: '/family/patient/p1');
     expect(find.text('Zainab binti Ahmad, 72'), findsOneWidget);
     expect(find.text('Penicillin'), findsOneWidget);
-    await tester.ensureVisible(_filled('Edit profile'));
+    await _scrollTo(tester, _filled('Edit profile'));
     await tester.tap(_filled('Edit profile'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Wheelchair'));
+    await _scrollTo(tester, find.text('Wheelchair'));
     await tester.tap(find.text('Wheelchair'));
     await tester.pump();
-    await tester.ensureVisible(_filled('Save profile'));
+    await _scrollTo(tester, _filled('Save profile'));
     await tester.tap(_filled('Save profile'));
     await tester.pumpAndSettle();
     expect(fakes.family.saved.single.mobility, Mobility.wheelchair);

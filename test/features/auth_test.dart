@@ -62,6 +62,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('gs-agree')));
     await tester.pump();
 
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
     await tester.ensureVisible(button());
     await tester.tap(button());
     await tester.pumpAndSettle();

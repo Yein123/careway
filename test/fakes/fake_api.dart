@@ -59,6 +59,12 @@ class FakeApi implements CareWayApi {
   }
 
   @override
+  Future<void> requestRideHome(String bookingId) async {
+    calls.add(('requestRideHome', bookingId));
+    if (nextError != null) _throw();
+  }
+
+  @override
   Future<void> submitSummary(
     String bookingId,
     Map<String, dynamic> summary,

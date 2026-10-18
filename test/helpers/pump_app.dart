@@ -20,6 +20,9 @@ Future<ProviderContainer> pumpApp(
   tester.view.physicalSize = const Size(390 * 3, 844 * 3);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
+  // Looping animations (pending spinner, live pulse) would never settle.
+  tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+  addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
   final container = ProviderContainer(
     overrides: [
       ...fakes.overrides,
@@ -43,3 +46,10 @@ Future<ProviderContainer> pumpApp(
 /// Current router location.
 String locationOf(ProviderContainer c) =>
     c.read(routerProvider).routerDelegate.currentConfiguration.uri.toString();
+
+/// Scrolls the screen's main list until [f] is built and fully visible.
+Future<void> scrollTo(WidgetTester tester, Finder f) async {
+  await tester.scrollUntilVisible(f, 300, scrollable: find.byType(Scrollable).first);
+  await tester.ensureVisible(f);
+  await tester.pumpAndSettle();
+}
