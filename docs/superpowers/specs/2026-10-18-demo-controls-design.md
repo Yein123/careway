@@ -14,7 +14,7 @@ All passwords are `careway123`.
 | # | Scenario | Account | Who | Patient |
 |---|---|---|---|---|
 | 1a | Guardian books for their child | `parent@gmail.com` | Siti (parent) | Adam, 9, Child |
-| 1b | Guardian books for their parent | `child@gmail.com` | Aisyah (adult child) | Zainab, 72, Parent |
+| 1b | Guardian books for their parent | `user@gmail.com` | Aisyah (adult child) | Zainab, 72, Parent |
 | 2 | Individual books for themselves | `self@gmail.com` | Hafiz, 58 | Himself, Myself |
 | 3 | Caregiver updates a visit | `caregiver@gmail.com` | Ravi S. | A ready visit for Zainab today |
 
@@ -70,7 +70,7 @@ Each one calls `requireAdmin(req.auth)` (`permission-denied` unless `token.admin
 1. Deletes the data belonging to the four demo accounts: their bookings, deliveries, the offers on those, receipts, notifications, and demo groups (id prefix `demo-`). It doesn't touch anything else.
 2. Creates or updates the accounts and families in the §1 table. The caregiver gets the skills needed for both group and escort jobs.
 3. Creates open Level 1 groups **for today**, with pickups at the next half hours that are still at least 30 minutes away, plus the following days as before. Same-day groups have `lockAt: null`.
-4. Creates the scenario 3 visit: Zainab (child@gmail.com's family), Level 2, confirmed and paid, caregiver@gmail.com assigned, appointment about 1 hour from now, no steps yet.
+4. Creates the scenario 3 visit: Zainab (user@gmail.com's family), Level 2, confirmed and paid, caregiver@gmail.com assigned, appointment about 1 hour from now, no steps yet.
 
 Note: Firebase Auth sends no email to these addresses (no verification or reset flows are used), so the `@gmail.com` names are just logins.
 
@@ -135,5 +135,5 @@ Stages still advance and show on the live screen. A notification (and therefore 
   - calendar stays open
   - admin guard
 - Manual, on deployed:
-  - install the APK, sign in as `child@gmail.com`, press **Accept** on admin, and check a push arrives
+  - install the APK, sign in as `user@gmail.com`, press **Accept** on admin, and check a push arrives
   - switch to `caregiver@gmail.com` and check the pushes follow the new account
