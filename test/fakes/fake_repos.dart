@@ -9,6 +9,7 @@ import 'package:careway/data/models/notification.dart';
 import 'package:careway/data/models/offer.dart';
 import 'package:careway/data/models/user.dart';
 import 'package:careway/data/providers.dart';
+import 'package:careway/features/admin/admin_providers.dart';
 import 'package:careway/data/repos/auth_repo.dart';
 import 'package:careway/data/repos/booking_repo.dart';
 import 'package:careway/data/repos/family_repo.dart';
@@ -368,6 +369,21 @@ class FakeReceiptRepo implements ReceiptRepo {
   );
 }
 
+class FakeAdminRepo implements AdminRepo {
+  final bookings = Live<Booking>();
+  final deliveries = Live<MedDelivery>();
+  final s3 = Live<Booking>();
+
+  @override
+  Stream<List<Booking>> watchBookings() => bookings.watch((l) => [...l]);
+
+  @override
+  Stream<List<MedDelivery>> watchDeliveries() => deliveries.watch((l) => [...l]);
+
+  @override
+  Stream<Booking?> watchS3() => s3.watch((l) => l.isEmpty ? null : l.first);
+}
+
 /// All fakes bundled, with provider overrides for a ProviderScope.
 class Fakes {
   Fakes({
@@ -406,6 +422,7 @@ class Fakes {
   final FakeNotificationRepo notification;
   final FakeReceiptRepo receipt;
   final FakeCaregiverRepo caregiver;
+  final admin = FakeAdminRepo();
 
   List<Override> get overrides => [
     authRepoProvider.overrideWithValue(auth),
@@ -418,5 +435,6 @@ class Fakes {
     notificationRepoProvider.overrideWithValue(notification),
     receiptRepoProvider.overrideWithValue(receipt),
     caregiverRepoProvider.overrideWithValue(caregiver),
+    adminRepoProvider.overrideWithValue(admin),
   ];
 }

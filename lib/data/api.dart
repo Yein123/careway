@@ -64,6 +64,16 @@ abstract class CareWayApi {
   Future<String> requestDelivery(Map<String, dynamic> input);
   Future<void> payDelivery(String deliveryId, String method);
   Future<void> seedDemo();
+
+  // Demo admin controls.
+  Future<void> adminReset();
+  Future<String> adminRespondOffer(String col, String id, bool accept);
+  Future<void> adminNotFound(String col, String id);
+
+  /// Returns the group status: 'locked' or 'cancelled'.
+  Future<String> adminLockGroup(String groupId);
+  Future<void> adminAdvanceDelivery(String id, {bool toEnd = false});
+  Future<void> adminAdvanceStep(String bookingId);
 }
 
 class FunctionsCareWayApi implements CareWayApi {
@@ -138,6 +148,35 @@ class FunctionsCareWayApi implements CareWayApi {
 
   @override
   Future<void> seedDemo() => _call('seedDemo', null);
+
+  @override
+  Future<void> adminReset() => _call('adminReset', {});
+
+  @override
+  Future<String> adminRespondOffer(String col, String id, bool accept) async =>
+      (await _call('adminRespondOffer', {
+            'col': col,
+            'id': id,
+            'accept': accept,
+          }))['status']
+          as String;
+
+  @override
+  Future<void> adminNotFound(String col, String id) =>
+      _call('adminNotFound', {'col': col, 'id': id});
+
+  @override
+  Future<String> adminLockGroup(String groupId) async =>
+      (await _call('adminLockGroup', {'groupId': groupId}))['status']
+          as String;
+
+  @override
+  Future<void> adminAdvanceDelivery(String id, {bool toEnd = false}) =>
+      _call('adminAdvanceDelivery', {'id': id, 'toEnd': toEnd});
+
+  @override
+  Future<void> adminAdvanceStep(String bookingId) =>
+      _call('adminAdvanceStep', {'bookingId': bookingId});
 }
 
 final careWayApiProvider = Provider<CareWayApi>(

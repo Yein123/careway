@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../data/models/user.dart';
 import '../data/providers.dart';
 import '../features/account/account_screen.dart';
+import '../features/admin/admin_screen.dart';
 import '../features/account/account_subpages.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/booking/book_screen.dart';
@@ -53,6 +54,8 @@ String? roleRedirect(Ref ref, String location) {
   if (uid == null) return public ? null : '/';
   final user = ref.read(currentUserProvider).value;
   if (user == null) return null;
+  if (user.role == UserRole.admin) return location == '/admin' ? null : '/admin';
+  if (location == '/admin') return user.role == UserRole.caregiver ? '/cg' : '/home';
   final inCaregiverApp = location == '/cg' || location.startsWith('/cg/');
   if (user.role == UserRole.caregiver) {
     return (!inCaregiverApp || location == '/cg/signin') ? '/cg' : null;
@@ -69,6 +72,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) => roleRedirect(ref, state.matchedLocation),
     routes: [
       GoRoute(path: '/', builder: (_, _) => const WelcomeScreen()),
+      GoRoute(path: '/admin', builder: (_, _) => const AdminScreen()),
       GoRoute(path: '/start', builder: (_, _) => const GetStartedScreen()),
       GoRoute(path: '/signin', builder: (_, _) => const SignInScreen()),
       GoRoute(path: '/notifications', builder: (_, _) => const NotificationsScreen()),

@@ -91,6 +91,44 @@ class FakeApi implements CareWayApi {
     calls.add(('seedDemo', null));
   }
 
+  @override
+  Future<void> adminReset() async {
+    calls.add(('adminReset', null));
+    if (nextError != null) _throw();
+  }
+
+  @override
+  Future<String> adminRespondOffer(String col, String id, bool accept) async {
+    calls.add(('adminRespondOffer', {'col': col, 'id': id, 'accept': accept}));
+    if (nextError != null) _throw();
+    return accept ? 'accepted' : 'declined';
+  }
+
+  @override
+  Future<void> adminNotFound(String col, String id) async {
+    calls.add(('adminNotFound', {'col': col, 'id': id}));
+    if (nextError != null) _throw();
+  }
+
+  @override
+  Future<String> adminLockGroup(String groupId) async {
+    calls.add(('adminLockGroup', groupId));
+    if (nextError != null) _throw();
+    return 'locked';
+  }
+
+  @override
+  Future<void> adminAdvanceDelivery(String id, {bool toEnd = false}) async {
+    calls.add(('adminAdvanceDelivery', {'id': id, 'toEnd': toEnd}));
+    if (nextError != null) _throw();
+  }
+
+  @override
+  Future<void> adminAdvanceStep(String bookingId) async {
+    calls.add(('adminAdvanceStep', bookingId));
+    if (nextError != null) _throw();
+  }
+
   List<Object?> argsOf(String name) => [
     for (final (n, a) in calls)
       if (n == name) a,

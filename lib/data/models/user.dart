@@ -1,6 +1,6 @@
 import 'firestore_utils.dart';
 
-enum UserRole { guardian, caregiver }
+enum UserRole { guardian, caregiver, admin }
 
 class SavedPlace {
   const SavedPlace({
