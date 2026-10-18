@@ -39,6 +39,16 @@ void main() {
     expect(find.text('LIVE NOW'), findsOneWidget);
   });
 
+  testWidgets('an early-morning visit today counts as 0 days, not -1', (tester) async {
+    // 06:00 and 07:30 in Malaysia: the visit's UTC date is the day before.
+    final early = DateTime.utc(2026, 10, 16, 22).toLocal();
+    final b = booking(apptAt: DateTime.utc(2026, 10, 16, 23, 30));
+    await pumpApp(tester, _with(bookings: [b]), at: '/home', now: early);
+    await scrollTo(tester, find.text('days'));
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('-1'), findsNothing);
+  });
+
   testWidgets('bell shows the unread count', (tester) async {
     final notes = [
       AppNotification(id: 'n1', type: 'accepted', title: 'A', body: '', createdAt: now),
@@ -76,6 +86,17 @@ void main() {
     await tester.tap(find.text('At the pharmacy · Farid A.'));
     await tester.pumpAndSettle();
     expect(c.read(routerProvider).routerDelegate.currentConfiguration.last.matchedLocation, '/delivery/d1/live');
+  });
+
+  testWidgets('View delivery progress on a booked delivery opens the progress page', (tester) async {
+    final c = await pumpApp(tester, guardianFakes(deliveries: [delivery()]), at: '/delivery/d1', now: now);
+    expect(find.text('Delivery booked'), findsOneWidget);
+    await scrollTo(tester, find.text('View delivery progress'));
+    await tester.tap(find.text('View delivery progress'));
+    await tester.pumpAndSettle();
+    expect(c.read(routerProvider).routerDelegate.currentConfiguration.last.matchedLocation, '/delivery/d1/live');
+    expect(find.text('Delivery progress'), findsOneWidget);
+    expect(find.text('Booking confirmed'), findsOneWidget);
   });
 
   testWidgets('only delivered shows the latest delivered row', (tester) async {

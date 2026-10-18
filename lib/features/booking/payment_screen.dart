@@ -149,7 +149,7 @@ class _BodyState extends ConsumerState<_Body> {
     final n = ridersWithMe(group, b.id);
     if (l1) {
       share = groupShareSen(draft.package, n);
-      final addons = {for (final a in draft.addons) if (addonAvailable(a, b)) a};
+      final addons = draft.addons;
       lines = [
         ('${draft.package.label} (ride + shared helper)', share),
         for (final a in addons) (a == Addon.language ? 'Language help (${draft.language ?? ''})' : a.label, a.sen),

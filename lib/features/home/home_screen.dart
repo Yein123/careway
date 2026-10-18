@@ -608,7 +608,9 @@ class _UpcomingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final days = DateTime(b.apptAt.year, b.apptAt.month, b.apptAt.day).difference(DateTime(now.year, now.month, now.day)).inDays;
+    final appt = b.apptAt.toLocal();
+    final local = now.toLocal();
+    final days = DateTime(appt.year, appt.month, appt.day).difference(DateTime(local.year, local.month, local.day)).inDays;
     final tone = levelTone(b.level);
     const meta = TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF3D3955));
     return Material(

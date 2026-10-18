@@ -142,8 +142,11 @@ class _Screen extends StatelessWidget {
 /// 32–34 · Medicine delivery after the request: finding a helper, pay,
 /// booked, live progress and delivered — driven by the live status.
 class DeliveryStatusScreen extends ConsumerWidget {
-  const DeliveryStatusScreen({super.key, required this.deliveryId});
+  const DeliveryStatusScreen({super.key, required this.deliveryId, this.live = false});
   final String deliveryId;
+
+  /// Opened from "View delivery progress": show progress even while booked.
+  final bool live;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -159,7 +162,7 @@ class DeliveryStatusScreen extends ConsumerWidget {
           : switch (x.status) {
               DeliveryStatus.pendingCaregiver || DeliveryStatus.awaitingPayment => _BeforePayment(x),
               DeliveryStatus.notMatched || DeliveryStatus.expired || DeliveryStatus.cancelled => _Closed(x),
-              DeliveryStatus.booked => _Booked(x),
+              DeliveryStatus.booked when !live => _Booked(x),
               _ => _Progress(x),
             },
     );

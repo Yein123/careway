@@ -69,14 +69,28 @@ void main() {
     expect(find.text('RM 48.00'), findsOneWidget);
   });
 
-  testWidgets('add-ons the helper cannot do are disabled', (tester) async {
+  testWidgets('every add-on is offered and language help takes a typed language', (tester) async {
     final b = booking(status: BookingStatus.awaitingPayment, caregiverSkills: const ['wheelchair']);
-    await pumpApp(tester, _fakes(b), at: '/booking/b1/package', now: now);
+    final c = await pumpApp(tester, _fakes(b), at: '/booking/b1/package', now: now);
+    expect(find.text('Lowest price'), findsOneWidget);
+    expect(find.text('Less waiting'), findsOneWidget);
     await scrollTo(tester, find.text('Consult sit-in'));
-    expect(find.text('Not offered by Farid A.'), findsWidgets);
     await tester.tap(find.text('Consult sit-in'));
     await tester.pump();
-    expect(find.text('RM 30.00'), findsOneWidget, reason: 'total unchanged');
+    expect(find.text('RM 40.00'), findsOneWidget, reason: 'sit-in added');
+    await scrollTo(tester, find.text('Language help'));
+    await tester.tap(find.text('Language help'));
+    await tester.pump();
+    expect(find.text('Tamil'), findsNothing);
+    await tester.tap(find.text('Continue to payment'));
+    await tester.pump();
+    expect(locationOf(c), '/booking/b1/package', reason: 'language not typed yet');
+    await scrollTo(tester, find.byType(TextField));
+    await tester.enterText(find.byType(TextField), 'Telugu');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue to payment'));
+    await tester.pumpAndSettle();
+    expect(c.read(routerProvider).routerDelegate.currentConfiguration.last.matchedLocation, '/booking/b1/pay');
   });
 
   testWidgets('pay shows a spinner and ignores a second tap', (tester) async {

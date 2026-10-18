@@ -103,15 +103,18 @@ describeEmu('payment, cancellation and settlement', () => {
     );
   });
 
-  test('addon outside helper skills rejected', async () => {
+  test('any add-on can be paid, and language help needs a typed language', async () => {
     await seedGroup(db, 'grp', 1);
     const id = await joinAndAccept('g1', 'p1', 'grp');
     await expect(
-      payBookingLogic(db, 'g1', { bookingId: id, method: 'fpx', package: 'saver', addons: ['language'], language: 'Tamil' }, NOW),
-    ).rejects.toEqual(code('addon-unavailable'));
-    await expect(
-      payBookingLogic(db, 'g1', { bookingId: id, method: 'fpx', package: 'saver', addons: ['consultSitIn'] }, NOW),
-    ).rejects.toEqual(code('addon-unavailable'));
+      payBookingLogic(db, 'g1', { bookingId: id, method: 'fpx', package: 'saver', addons: ['language'], language: '  ' }, NOW),
+    ).rejects.toEqual(code('bad-request'));
+    await payBookingLogic(
+      db, 'g1', { bookingId: id, method: 'fpx', package: 'saver', addons: ['language', 'consultSitIn'], language: ' Telugu ' }, NOW,
+    );
+    const b = (await db.doc(`bookings/${id}`).get()).data()!;
+    expect(b.language).toBe('Telugu');
+    expect(b.addons).toEqual(['language', 'consultSitIn']);
   });
 
   test('level 2 pays the escort estimate', async () => {

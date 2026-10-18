@@ -8,6 +8,7 @@ import '../../core/money.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/async_view.dart';
 import '../../core/widgets/design_kit.dart';
+import '../../core/widgets/fields.dart';
 import '../../data/models/booking.dart';
 import '../../data/providers.dart';
 import '../../domain/pricing.dart';
@@ -83,8 +84,7 @@ class _Body extends ConsumerWidget {
     final group = b.groupId == null ? null : ref.watch(groupProvider(b.groupId!)).value;
     final n = ridersWithMe(group, b.id);
     final helper = b.caregiverName ?? 'your helper';
-    final langs = languageOptions(b);
-    final addons = {for (final a in draft.addons) if (addonAvailable(a, b)) a};
+    final addons = draft.addons;
     final share = groupShareSen(draft.package, n);
     final total = share + addonsSen(addons);
     final first = b.patient.name.split(' ').first;
@@ -93,10 +93,7 @@ class _Body extends ConsumerWidget {
     void toggle(Addon a) {
       final next = {...draft.addons};
       next.contains(a) ? next.remove(a) : next.add(a);
-      notifier.update((d) => d.copyWith(
-            addons: next,
-            language: () => a == Addon.language && next.contains(a) ? (d.language ?? langs.firstOrNull) : d.language,
-          ));
+      notifier.update((d) => d.copyWith(addons: next));
     }
 
     return DesignScaffold(
@@ -119,7 +116,12 @@ class _Body extends ConsumerWidget {
             height: 54,
             fontSize: 16,
             onPressed: () {
-              notifier.update((d) => d.copyWith(addons: addons));
+              if (addons.contains(Addon.language) && (draft.language ?? '').trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Type the language needed for Language help.')),
+                );
+                return;
+              }
               context.push('/booking/${b.id}/pay');
             },
           ),
@@ -163,17 +165,18 @@ class _Body extends ConsumerWidget {
                   padding: const EdgeInsets.all(12),
                   onTap: () => notifier.update((d) => d.copyWith(package: p)),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    Row(children: [
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                          decoration: BoxDecoration(color: _tagTones[p]!.$1, borderRadius: BorderRadius.circular(8)),
-                          child: Text(_tags[p]!,
-                              overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _tagTones[p]!.$2)),
+                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                            decoration: BoxDecoration(color: _tagTones[p]!.$1, borderRadius: BorderRadius.circular(8)),
+                            child: Text(_tags[p]!, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _tagTones[p]!.$2)),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Spacer(),
                       Transform.scale(scale: 20 / 22, child: RadioDot(on: draft.package == p)),
                     ]),
                     const SizedBox(height: 10),
@@ -217,20 +220,14 @@ class _Body extends ConsumerWidget {
         ]),
         Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           for (final a in Addon.values) ...[
-            _AddonRow(
-              addon: a,
-              available: addonAvailable(a, b),
-              selected: addons.contains(a),
-              helper: helper,
-              onTap: () => toggle(a),
-            ),
+            _AddonRow(addon: a, selected: addons.contains(a), onTap: () => toggle(a)),
             if (a == Addon.language && addons.contains(a))
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Wrap(spacing: 8, runSpacing: 8, children: [
-                  for (final l in langs)
-                    _LangChip(label: l, on: draft.language == l, onTap: () => notifier.update((d) => d.copyWith(language: () => l))),
-                ]),
+                child: _LanguageField(
+                  initial: draft.language ?? '',
+                  onChanged: (v) => notifier.update((d) => d.copyWith(language: () => v.trim().isEmpty ? null : v.trim())),
+                ),
               ),
           ],
         ]),
@@ -239,52 +236,54 @@ class _Body extends ConsumerWidget {
   }
 }
 
-class _LangChip extends StatelessWidget {
-  const _LangChip({required this.label, required this.on, required this.onTap});
-  final String label;
-  final bool on;
-  final VoidCallback onTap;
+/// Free-text language for the "Language help" add-on.
+class _LanguageField extends StatefulWidget {
+  const _LanguageField({required this.initial, required this.onChanged});
+  final String initial;
+  final ValueChanged<String> onChanged;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-        button: true,
-        selected: on,
-        child: Material(
-          color: on ? CwColors.primary : CwColors.white,
-          shape: StadiumBorder(side: BorderSide(color: on ? CwColors.primary : CwColors.line, width: 2)),
-          child: InkWell(
-            customBorder: const StadiumBorder(),
-            onTap: onTap,
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 40),
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Center(widthFactor: 1, child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: on ? CwColors.white : CwColors.ink))),
-            ),
-          ),
-        ),
+  State<_LanguageField> createState() => _LanguageFieldState();
+}
+
+class _LanguageFieldState extends State<_LanguageField> {
+  late final _controller = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => LabeledField(
+        label: 'What language is needed?',
+        controller: _controller,
+        hint: 'e.g. Tamil, Cantonese, sign language',
+        textInputAction: TextInputAction.done,
+        onChanged: (v) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          widget.onChanged(v);
+        },
       );
 }
 
 class _AddonRow extends StatelessWidget {
-  const _AddonRow({required this.addon, required this.available, required this.selected, required this.helper, required this.onTap});
+  const _AddonRow({required this.addon, required this.selected, required this.onTap});
   final Addon addon;
-  final bool available;
   final bool selected;
-  final String helper;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Opacity(
-          opacity: available ? 1 : 0.55,
-          child: Semantics(
+        child: Semantics(
             checked: selected,
             child: SelectCard(
               on: selected,
               radius: 14,
               padding: const EdgeInsets.symmetric(horizontal: 14),
-              onTap: available ? onTap : null,
+              onTap: onTap,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 44),
                 child: Row(children: [
@@ -302,10 +301,7 @@ class _AddonRow extends StatelessWidget {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(addon.label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                        if (!available) Text('Not offered by $helper', style: const TextStyle(fontSize: 11, color: CwColors.muted)),
-                      ]),
+                      child: Text(addon.label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                     ),
                   ),
                   Text(formatRm(addon.sen), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: CwColors.primaryDark)),
@@ -313,6 +309,5 @@ class _AddonRow extends StatelessWidget {
               ),
             ),
           ),
-        ),
       );
 }

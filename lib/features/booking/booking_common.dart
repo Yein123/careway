@@ -3,29 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/booking.dart';
 import '../../data/models/group.dart';
 import '../../data/providers.dart';
-import '../../domain/needs.dart';
 import '../../domain/pricing.dart';
 import 'booking_draft.dart';
 
 final groupProvider = StreamProvider.family<Group?, String>((ref, id) => ref.watch(groupRepoProvider).watch(id));
-
-/// Languages offered by the "Language help" add-on (beyond Malay/English).
-const helpLanguages = ['Tamil', 'Cantonese', 'Hokkien', 'Mandarin', 'Sign language'];
-
-const _addonSkill = {
-  Addon.consultSitIn: Skill.consultSitIn,
-  Addon.wheelchairOnArrival: Skill.wheelchair,
-  Addon.medicineCollection: Skill.medicineCollection,
-};
-
-List<String> languageOptions(Booking b) => [for (final l in helpLanguages) if (b.caregiverLanguages.contains(l)) l];
-
-/// Whether the accepted helper can provide [a] (server re-checks at payment).
-bool addonAvailable(Addon a, Booking b) {
-  if (a == Addon.language) return languageOptions(b).isNotEmpty;
-  final skill = _addonSkill[a];
-  return skill == null || b.caregiverSkills.contains(skill.name);
-}
 
 /// Rebuilds a draft from an existing booking (e.g. opened from a notification).
 BookingDraft draftFromBooking(Booking b, BookingDraft current) {

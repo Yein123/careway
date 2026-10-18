@@ -7,7 +7,6 @@ import {
   ADDON_LABEL, ADDON_SEN, AddonId, DEFAULT_ESCORT_HOURS, ESCORT_HOURLY_SEN, GROUP_CAPACITY, GroupPackage,
   groupShareSen, isAddon, PACKAGE_LABEL, PRIVATE_RIDE_SEN,
 } from '../domain/pricing';
-import { Skill } from '../domain/needs';
 
 export const PAYMENT_METHODS = ['fpx', 'tng', 'duitnow', 'card'] as const;
 export const METHOD_LABEL: Record<string, string> = {
@@ -15,12 +14,6 @@ export const METHOD_LABEL: Record<string, string> = {
   tng: "Touch 'n Go eWallet",
   duitnow: 'DuitNow QR',
   card: 'Debit or credit card',
-};
-
-const ADDON_SKILL: Partial<Record<AddonId, Skill>> = {
-  consultSitIn: 'consultSitIn',
-  wheelchairOnArrival: 'wheelchair',
-  medicineCollection: 'medicineCollection',
 };
 
 interface PayInput {
@@ -60,7 +53,6 @@ export async function payBookingLogic(db: Firestore, uid: string, raw: unknown, 
     if (b.status === 'confirmed' && b.payment?.status === 'paid') return { status: 'confirmed', paidSen: b.price.paidSen };
     if (b.status !== 'awaiting_payment') fail('not-payable', 'This booking is not waiting for payment.');
 
-    const cg = (await tx.get(db.doc(`caregivers/${b.caregiverId}`))).data() ?? {};
     const groupRef = b.groupId ? db.doc(`groups/${b.groupId}`) : null;
     const group = groupRef ? (await tx.get(groupRef)).data() : undefined;
 
@@ -69,12 +61,10 @@ export async function payBookingLogic(db: Firestore, uid: string, raw: unknown, 
     if (b.level === 1) {
       if (input.package !== 'saver' && input.package !== 'flex') fail('bad-request', 'Pick a package.');
       if (!group) fail('not-payable', 'This group is no longer available.');
-      for (const a of addons) {
-        const skill = ADDON_SKILL[a];
-        if (skill && !(cg.skills ?? []).includes(skill)) fail('addon-unavailable', `${ADDON_LABEL[a]} is not offered by ${cg.displayName}.`);
-        if (a === 'language' && (!input.language || !(cg.languages ?? []).includes(input.language))) {
-          fail('addon-unavailable', `${cg.displayName} does not speak ${input.language ?? 'that language'}.`);
-        }
+      if (addons.includes('language')) {
+        const lang = typeof input.language === 'string' ? input.language.trim() : '';
+        if (!lang || lang.length > 40) fail('bad-request', 'Type the language needed for Language help.');
+        input.language = lang;
       }
       const riders: string[] = group.riderBookingIds ?? [];
       const n = Math.min(GROUP_CAPACITY, riders.includes(ref.id) ? riders.length : riders.length + 1);
