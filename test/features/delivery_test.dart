@@ -1,3 +1,4 @@
+import 'package:careway/core/router.dart';
 import 'package:careway/core/money.dart';
 import 'package:careway/data/models/delivery.dart';
 import 'package:careway/domain/pricing.dart';
@@ -97,5 +98,26 @@ void main() {
     final fakes = guardianFakes()..delivery.put(_delivery(DeliveryStatus.delivered));
     await pumpApp(tester, fakes, at: '/delivery/d1', now: now);
     expect(find.text('Rate this delivery'), findsOneWidget);
+  });
+
+  testWidgets('deliveries list groups In progress and Delivered and New delivery opens the request', (tester) async {
+    final fakes = guardianFakes(deliveries: [
+      delivery(id: 'd1', status: DeliveryStatus.onTheWay),
+      delivery(id: 'd2', status: DeliveryStatus.delivered),
+    ]);
+    final c = await pumpApp(tester, fakes, at: '/deliveries', now: now);
+    expect(find.text('Medicine deliveries'), findsOneWidget);
+    expect(find.text('Track and look back at every delivery'), findsOneWidget);
+    expect(find.text('In progress'), findsOneWidget);
+    expect(find.text('Delivered'), findsNWidgets(2), reason: 'section title and chip');
+    expect(find.text('Track ›'), findsOneWidget);
+    await tester.tap(_filled('New delivery'));
+    await tester.pumpAndSettle();
+    expect(c.read(routerProvider).routerDelegate.currentConfiguration.last.matchedLocation, '/delivery/new');
+  });
+
+  testWidgets('deliveries list shows an empty state', (tester) async {
+    await pumpApp(tester, guardianFakes(deliveries: []), at: '/deliveries', now: now);
+    expect(find.text('No deliveries yet'), findsOneWidget);
   });
 }

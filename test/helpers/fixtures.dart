@@ -1,4 +1,5 @@
 import 'package:careway/data/models/booking.dart';
+import 'package:careway/data/models/delivery.dart';
 import 'package:careway/data/models/family.dart';
 import 'package:careway/data/models/user.dart';
 import 'package:careway/domain/booking_status.dart';
@@ -85,10 +86,38 @@ Booking booking({
     );
 
 /// A signed-in guardian with family f1 and optional patients/bookings.
-Fakes guardianFakes({List<Patient> patients = const [zainab], List<Booking> bookings = const []}) => Fakes(
+Fakes guardianFakes({
+  List<Patient> patients = const [zainab],
+  List<Booking> bookings = const [],
+  List<MedDelivery>? deliveries,
+}) =>
+    Fakes(
       uid: 'g1',
       users: [guardian],
       families: [family],
       patients: {'f1': patients},
       bookings: bookings,
+      deliveries: deliveries,
+    );
+
+/// A medicine delivery for family f1 (helper Farid A.).
+MedDelivery delivery({String id = 'd1', DeliveryStatus status = DeliveryStatus.booked, List<VisitStep> steps = const [], DateTime? createdAt}) =>
+    MedDelivery(
+      id: id,
+      familyId: 'f1',
+      guardianUid: 'g1',
+      patientId: 'p1',
+      patientName: 'Zainab binti Ahmad',
+      pharmacyId: 'hsb',
+      pharmacyName: 'Hospital Sungai Buloh',
+      window: '8:00 – 10:00 AM',
+      deliverTo: 'Home · 12, Jalan Elmina Lakeside',
+      routeKm: 12.4,
+      baseSen: 500,
+      distanceSen: 620,
+      status: status,
+      caregiverId: 'cg1',
+      caregiverName: 'Farid A.',
+      steps: steps,
+      createdAt: createdAt ?? now,
     );

@@ -21,6 +21,7 @@ import '../features/booking/upcoming_screen.dart';
 import '../features/caregiver/cg_home_screen.dart';
 import '../features/caregiver/cg_job_screens.dart';
 import '../features/caregiver/cg_tabs.dart';
+import '../features/delivery/delivery_list_screen.dart';
 import '../features/delivery/delivery_request_screen.dart';
 import '../features/delivery/delivery_status_screen.dart';
 import '../features/family/family_screen.dart';
@@ -125,7 +126,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           StatefulShellBranch(
             routes: [
-              GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+              GoRoute(
+                path: '/home',
+                builder: (_, _) => const HomeScreen(),
+              ),
+              GoRoute(path: '/deliveries', builder: (_, _) => const DeliveryListScreen()),
             ],
           ),
           StatefulShellBranch(

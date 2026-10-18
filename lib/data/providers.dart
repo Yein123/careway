@@ -116,6 +116,14 @@ final bookingProvider = StreamProvider.family<Booking?, String>(
   (ref, id) => ref.watch(bookingRepoProvider).watch(id),
 );
 
-final deliveryProvider = StreamProvider.family<MedDelivery?, String>(
+/// The family's medicine deliveries, newest first.
+final familyDeliveriesProvider = StreamProvider<List<MedDelivery>>((ref) {
+  final fid = ref.watch(familyIdProvider);
+  if (fid == null) return Stream.value(const []);
+  return ref.watch(deliveryRepoProvider).watchForFamily(fid).map((l) => [...l]..sort(
+      (a, b) => (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0)).compareTo(a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))));
+});
+
+final deliveryProvider =StreamProvider.family<MedDelivery?, String>(
   (ref, id) => ref.watch(deliveryRepoProvider).watch(id),
 );

@@ -17,7 +17,9 @@ import '../../data/models/family.dart';
 import '../../data/models/firestore_utils.dart' show initialsOf;
 import '../../data/providers.dart';
 import '../../domain/booking_status.dart';
+import '../../data/models/delivery.dart';
 import '../booking/booking_draft.dart';
+import '../delivery/delivery_list_screen.dart';
 import '../visits/rate_sheet.dart';
 
 String placeName(String hospitalId) {
@@ -63,6 +65,9 @@ class HomeScreen extends ConsumerWidget {
       ..sort((a, b) => a.apptAt.compareTo(b.apptAt));
     final past = bookings.where((b) => b.status == BookingStatus.completed).toList()
       ..sort((a, b) => b.apptAt.compareTo(a.apptAt));
+    final deliveries = ref.watch(familyDeliveriesProvider).value ?? const <MedDelivery>[];
+    final deliveriesActive = deliveries.where(isDeliveryInProgress).toList();
+    final deliveredLatest = deliveries.where((d) => d.status == DeliveryStatus.delivered).firstOrNull;
 
     final sections = <Widget>[
       // Greeting
@@ -199,6 +204,18 @@ class HomeScreen extends ConsumerWidget {
                   Padding(padding: const EdgeInsets.only(bottom: 12), child: _UpcomingCard(b, now)),
               ]),
       ),
+      if (deliveriesActive.isNotEmpty || deliveredLatest != null)
+        _Section(
+          title: 'Medicine delivery',
+          count: deliveriesActive.length,
+          onSeeAll: () => context.push('/deliveries'),
+          child: deliveriesActive.isNotEmpty
+              ? Column(children: [
+                  for (final d in deliveriesActive)
+                    Padding(padding: const EdgeInsets.only(bottom: 12), child: DeliveryProgressCard(d)),
+                ])
+              : DeliveredRow(deliveredLatest!),
+        ),
       if (patients.isNotEmpty)
         _Section(
           title: 'Family',

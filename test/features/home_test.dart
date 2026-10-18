@@ -1,4 +1,6 @@
+import 'package:careway/core/router.dart';
 import 'package:careway/data/models/booking.dart';
+import 'package:careway/data/models/delivery.dart';
 import 'package:careway/data/models/notification.dart';
 import 'package:careway/domain/booking_status.dart';
 import 'package:flutter/material.dart';
@@ -56,5 +58,33 @@ void main() {
     await tester.pumpAndSettle();
     expect(fakes.notification.marked, ['n1']);
     expect(locationOf(c), '/family');
+  });
+
+  testWidgets('no deliveries hides the Medicine delivery section', (tester) async {
+    await pumpApp(tester, guardianFakes(deliveries: []), at: '/home', now: now);
+    expect(find.text('Medicine delivery'), findsOneWidget, reason: 'only the service tile');
+    expect(find.textContaining('Track'), findsNothing);
+    expect(find.text('Delivered'), findsNothing);
+  });
+
+  testWidgets('in-progress delivery shows a card with stage label and Track', (tester) async {
+    final fakes = guardianFakes(deliveries: [delivery(status: DeliveryStatus.atPharmacy)]);
+    final c = await pumpApp(tester, fakes, at: '/home', now: now);
+    await scrollTo(tester, find.text('At the pharmacy · Farid A.'));
+    expect(find.text('Track ›'), findsOneWidget);
+    expect(find.text("Zainab's medicine"), findsOneWidget);
+    await tester.tap(find.text('At the pharmacy · Farid A.'));
+    await tester.pumpAndSettle();
+    expect(c.read(routerProvider).routerDelegate.currentConfiguration.last.matchedLocation, '/delivery/d1/live');
+  });
+
+  testWidgets('only delivered shows the latest delivered row', (tester) async {
+    final fakes = guardianFakes(deliveries: [delivery(status: DeliveryStatus.delivered)]);
+    final c = await pumpApp(tester, fakes, at: '/home', now: now);
+    await scrollTo(tester, find.text('Delivered'));
+    expect(find.text('Track ›'), findsNothing);
+    await tester.tap(find.text('Delivered'));
+    await tester.pumpAndSettle();
+    expect(c.read(routerProvider).routerDelegate.currentConfiguration.last.matchedLocation, '/delivery/d1/done');
   });
 }
