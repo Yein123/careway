@@ -4,7 +4,7 @@ import { respondToOfferLogic } from '../src/booking/respond';
 import { payBookingLogic } from '../src/booking/pay';
 import { advanceStepLogic, submitSummaryLogic } from '../src/booking/steps';
 import { requestDeliveryLogic } from '../src/delivery/request';
-import { progressDeliveriesLogic } from '../src/delivery/progress';
+import { advanceDeliveryTx, progressDeliveriesLogic } from '../src/delivery/progress';
 import { seedDemoLogic } from '../src/seed';
 import { deliveryFee, routeKm } from '../src/domain/pricing';
 import { placeById } from '../src/places';
@@ -137,6 +137,40 @@ describeEmu('medicine delivery', () => {
     await progressDeliveriesLogic(db, new Date(NOW.getTime() + MIN + 1000));
     d = (await db.doc(`deliveries/${r.deliveryId}`).get()).data()!;
     expect(d.status).toBe('collecting');
+  });
+});
+
+describeEmu('medicine delivery notifications and forced advance', () => {
+  beforeEach(async () => {
+    await clearDb();
+    await seedFamily(db);
+    await seedCaregiver(db, 'farid', { certs: ['firstAid'], skills: ['wheelchair', 'medicineCollection'] });
+  });
+  const req = () => requestDeliveryLogic(db, 'g1', {
+    patientId: 'p1', pharmacyId: 'hsb', window: '8:00 – 10:00 AM', windowStart: APPT.toISOString(), method: 'fpx',
+    docs: { card: true, ic: true, letter: true },
+  }, NOW);
+
+  test('delivery notifies only at collecting and delivered', async () => {
+    const r = await req();
+    const before = (await db.collection('users/g1/notifications').where('type', '==', 'delivery-step').get()).size;
+    const stages: (string | null)[] = [];
+    for (let i = 0; i < 5; i++) stages.push(await advanceDeliveryTx(db, r.deliveryId, new Date(NOW.getTime() + (i + 1) * 1000), { force: true }));
+    expect(stages).toEqual(['collecting', 'at_pharmacy', 'collected', 'on_the_way', 'delivered']);
+    expect(await advanceDeliveryTx(db, r.deliveryId, NOW, { force: true })).toBeNull();
+    const d = (await db.doc(`deliveries/${r.deliveryId}`).get()).data()!;
+    expect(d.steps.map((s: { key: string }) => s.key)).toEqual(['booked', 'collecting', 'at_pharmacy', 'collected', 'on_the_way', 'delivered']);
+    const notes = await db.collection('users/g1/notifications').where('type', '==', 'delivery-step').get();
+    expect(notes.size - before).toBe(2);
+    expect(notes.docs.map((n) => n.data().title).sort()).toEqual(
+      ['Medicine run: collecting the documents', `${d.patientName}'s medicine was delivered`].sort(),
+    );
+  });
+
+  test('advanceDeliveryTx without force waits a minute', async () => {
+    const r = await req();
+    expect(await advanceDeliveryTx(db, r.deliveryId, new Date(NOW.getTime() + 30_000), { force: false })).toBeNull();
+    expect(await advanceDeliveryTx(db, r.deliveryId, new Date(NOW.getTime() + MIN + 1000), { force: false })).toBe('collecting');
   });
 });
 

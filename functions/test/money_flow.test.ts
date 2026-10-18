@@ -2,7 +2,7 @@ import { requestBookingLogic, RequestInput } from '../src/booking/request';
 import { respondToOfferLogic } from '../src/booking/respond';
 import { payBookingLogic } from '../src/booking/pay';
 import { cancelBookingLogic } from '../src/booking/cancel';
-import { lockGroupsLogic } from '../src/booking/lock';
+import { lockGroupsLogic, lockGroupTx } from '../src/booking/lock';
 import { toDate } from '../src/db';
 import {
   APPT, bookingOf, clearDb, describeEmu, ELMINA, HOUR, MIN, NOW, offersFor, seedCaregiver, seedFamily, seedGroup, testDb,
@@ -139,6 +139,26 @@ describeEmu('payment, cancellation and settlement', () => {
     expect((await bookingOf(db, a.bookingId)).price.finalShareSen).toBe(2200);
     expect((await receiptsFor(a.bookingId)).filter((r) => r.kind === 'refund').map((r) => r.amountSen)).toEqual([1800]);
     expect((await receiptsFor(cId)).filter((r) => r.kind === 'refund')).toHaveLength(0);
+  });
+
+  test('lockGroupTx locks a same-day group with lockAt null and refunds the price drop', async () => {
+    const a = await startGroupAndPay('g1', 'p1');
+    const bId = await joinAndAccept('g2', 'p1', a.groupId);
+    await payBookingLogic(db, 'g2', { bookingId: bId, method: 'fpx', package: 'saver' }, NOW);
+    await db.doc(`groups/${a.groupId}`).update({ lockAt: null });
+    expect(await lockGroupTx(db, a.groupId, NOW)).toBe(true);
+    expect((await db.doc(`groups/${a.groupId}`).get()).data()!.status).toBe('locked');
+    expect((await receiptsFor(a.bookingId)).filter((r) => r.kind === 'refund')).toHaveLength(1);
+  });
+
+  test('lockGroupTx on a locked group returns false and writes nothing', async () => {
+    const a = await startGroupAndPay('g1', 'p1');
+    expect(await lockGroupTx(db, a.groupId, NOW)).toBe(true);
+    const receipts = (await db.collection('receipts').get()).size;
+    const notes = (await db.collection('users/g1/notifications').get()).size;
+    expect(await lockGroupTx(db, a.groupId, NOW)).toBe(false);
+    expect((await db.collection('receipts').get()).size).toBe(receipts);
+    expect((await db.collection('users/g1/notifications').get()).size).toBe(notes);
   });
 
   test('lock after cancel: nobody pays more than they paid', async () => {
