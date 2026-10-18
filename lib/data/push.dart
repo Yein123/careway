@@ -37,11 +37,12 @@ class FirebasePushPlatform implements PushPlatform {
   final FlutterLocalNotificationsPlugin _local;
   final _tapped = StreamController<String>.broadcast();
   Future<void>? _init;
+  int _nextId = 0;
 
   Future<void> _ensureInit() => _init ??= () async {
     await _local.initialize(
       settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings('ic_stat_careway'),
       ),
       onDidReceiveNotificationResponse: (r) {
         final link = r.payload;
@@ -106,13 +107,14 @@ class FirebasePushPlatform implements PushPlatform {
   Future<void> showLocal(PushMessage m) async {
     await _ensureInit();
     await _local.show(
-      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      id: _nextId++,
       title: m.title,
       body: m.body,
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           _channel.id,
           _channel.name,
+          icon: 'ic_stat_careway',
           importance: Importance.high,
           priority: Priority.high,
         ),
@@ -130,17 +132,25 @@ class PushService {
   final void Function(String link) _go;
 
   String? _token;
+  int _generation = 0;
   final _subs = <StreamSubscription<Object?>>[];
 
   Future<void> onSignedIn() async {
+    final gen = ++_generation;
     _cancelSubs();
+    // Never carry a previous account's token into this session.
+    _token = null;
     try {
       if (!await _platform.requestPermission()) return;
-      _token = await _platform.getToken();
-      if (_token != null) await _api.claimPushToken(_token!);
+      final token = await _platform.getToken();
+      if (gen != _generation) return;
+      _token = token;
+      if (token != null) await _api.claimPushToken(token);
     } catch (e) {
       debugPrint('push: could not register token: $e');
     }
+    if (gen != _generation) return;
+    _cancelSubs();
     _subs.addAll([
       _platform.onTokenRefresh.listen((t) async {
         _token = t;
@@ -154,7 +164,7 @@ class PushService {
       _platform.onOpenedLink.listen(_open),
     ]);
     final initial = await _platform.initialLink();
-    if (initial != null) _open(initial);
+    if (initial != null && gen == _generation) _open(initial);
   }
 
   void _open(String link) {
@@ -163,10 +173,12 @@ class PushService {
 
   Future<void> beforeSignOut() async {
     final t = _token;
-    if (t == null) return;
     try {
-      await _api.releasePushToken(t);
-    } catch (_) {}
+      if (t != null) await _api.releasePushToken(t);
+    } catch (_) {
+    } finally {
+      _token = null;
+    }
   }
 
   void _cancelSubs() {
