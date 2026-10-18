@@ -34,8 +34,9 @@ export async function cancelBookingLogic(
     let refundSen = 0;
     let creditSen = 0;
     if (b.status === 'confirmed') {
-      const lockAt = toDate(b.lockAt) ?? new Date(toDate(b.apptAt)!.getTime() - 24 * HOUR);
-      const afterLock = (group?.status === 'locked') || now.getTime() >= lockAt.getTime();
+      // Group bookings lock only when the group does (lockAt null = same-day, on demand).
+      const lockAt = b.groupId ? toDate(b.lockAt) : (toDate(b.lockAt) ?? new Date(toDate(b.apptAt)!.getTime() - 24 * HOUR));
+      const afterLock = group?.status === 'locked' || (lockAt != null && now.getTime() >= lockAt.getTime());
       const net = (b.price?.paidSen ?? 0) - (b.price?.refundSen ?? 0);
       const o = cancelOutcome({ pkg: (b.package ?? null) as GroupPackage | null, level: b.level, paidSen: net, afterLock });
       refundSen = o.refundSen;

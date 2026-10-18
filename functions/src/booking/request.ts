@@ -23,7 +23,11 @@ export interface RequestInput {
   waitlist?: boolean;
 }
 
-export const MIN_LEAD_MS = 24 * HOUR;
+/** Group lock time: pickup - 24h while that is still ahead, else null (same-day groups lock only on demand). */
+export function groupLockAt(pickupAt: Date, now: Date): Date | null {
+  const lockAt = new Date(pickupAt.getTime() - 24 * HOUR);
+  return lockAt.getTime() > now.getTime() ? lockAt : null;
+}
 
 function parseInput(raw: any): RequestInput {
   const ok =
@@ -56,7 +60,7 @@ export async function requestBookingLogic(
 
   const apptAt = new Date(input.apptAt);
   if (isNaN(apptAt.getTime())) fail('bad-request', 'Invalid appointment time.');
-  if (apptAt.getTime() - now.getTime() < MIN_LEAD_MS) fail('too-soon', 'Book at least 24 hours ahead.');
+  if (apptAt.getTime() <= now.getTime()) fail('too-soon', 'That time has already passed.');
   const hospital = placeById(input.hospitalId);
   if (!hospital) fail('bad-request', 'Unknown hospital.');
 
@@ -115,8 +119,9 @@ export async function requestBookingLogic(
     const point = placeById(input.newGroup.pickupPointId);
     pickupAt = new Date(input.newGroup.pickupTime);
     if (!point || isNaN(pickupAt.getTime()) || pickupAt >= apptAt) fail('bad-request', 'Pick a pickup point and a time before the appointment.');
+    if (pickupAt.getTime() <= now.getTime()) fail('too-soon', 'That time has already passed.');
     pickup = { label: point.name, lat: point.lat, lng: point.lng };
-    const lockAt = new Date(pickupAt.getTime() - 24 * HOUR);
+    const lockAt = groupLockAt(pickupAt, now);
     const groupRef = db.collection('groups').doc();
     groupId = groupRef.id;
     await groupRef.set({
@@ -127,14 +132,14 @@ export async function requestBookingLogic(
       pickupAt: ts(pickupAt),
       apptWindow: `${mytTime(apptAt)}–${mytTime(new Date(apptAt.getTime() + 45 * MINUTE))}`,
       status: 'open',
-      lockAt: ts(lockAt),
+      lockAt: lockAt ? ts(lockAt) : null,
       caregiverId: null,
       caregiverName: null,
       caregiverRating: null,
       riderBookingIds: [],
       riderInitials: [],
-      // The founder's seat is held until the group locks.
-      heldSeats: [{ bookingId: bookingRef.id, until: ts(lockAt) }],
+      // The founder's seat is held until the group locks (or pickup, for a same-day group).
+      heldSeats: [{ bookingId: bookingRef.id, until: ts(lockAt ?? pickupAt) }],
       capacity: GROUP_CAPACITY,
       createdAt: ts(now),
     });
@@ -142,6 +147,7 @@ export async function requestBookingLogic(
     estimateSen = groupShareSen('saver', 1);
   }
 
+  const bookingLockAt = pickupAt ? groupLockAt(pickupAt, now) : null;
   const window = jobWindow(apptAt, pickupAt);
   const ranked = await rankFor(db, req, { apptAt, pickup, window, familyId, patientId: input.patientId, language: input.language });
   await bookingRef.set({
@@ -149,7 +155,7 @@ export async function requestBookingLogic(
     pickup,
     pickupAt: pickupAt ? ts(pickupAt) : null,
     groupId,
-    lockAt: pickupAt ? ts(new Date(pickupAt.getTime() - 24 * HOUR)) : null,
+    lockAt: bookingLockAt ? ts(bookingLockAt) : null,
     status: 'pending_caregiver',
     offerKind,
     estimateSen,
@@ -195,6 +201,7 @@ async function joinGroup(
     if (!g) fail('group-full', 'This group is no longer available.');
     const point = placeById(g.pickupPointId)!;
     const pickupAt = toDate(g.pickupAt)!;
+    if (pickupAt.getTime() <= now.getTime()) fail('too-soon', 'That time has already passed.');
     const holds = (g.heldSeats ?? []).filter((h: any) => toDate(h.until)!.getTime() > now.getTime());
     const seatsLeft = (g.capacity ?? GROUP_CAPACITY) - (g.riderBookingIds ?? []).length - holds.length;
     const window = jobWindow(apptAt, pickupAt);

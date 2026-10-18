@@ -1,5 +1,8 @@
 import { Timestamp } from 'firebase-admin/firestore';
-import { requestBookingLogic, RequestInput } from '../src/booking/request';
+import { requestBookingLogic, RequestInput, groupLockAt } from '../src/booking/request';
+import { cancelBookingLogic } from '../src/booking/cancel';
+import { cancelOutcome } from '../src/domain/pricing';
+import { toDate } from '../src/db';
 import { respondToOfferLogic } from '../src/booking/respond';
 import { expireOffersLogic } from '../src/booking/expire';
 import {
@@ -103,11 +106,24 @@ describeEmu('booking request and offers', () => {
 
   test('too soon and level 1 not allowed', async () => {
     await expect(
-      requestBookingLogic(db, 'g1', personal({ apptAt: new Date(NOW.getTime() + 23 * HOUR).toISOString() }), NOW),
+      requestBookingLogic(db, 'g1', personal({ apptAt: new Date(NOW.getTime() - HOUR).toISOString() }), NOW),
     ).rejects.toEqual(code('too-soon'));
     await seedGroup(db, 'g1grp', 1);
     await expect(requestBookingLogic(db, 'g1', personal({ patientId: 'p2', level: 1, groupId: 'g1grp' }), NOW)).rejects.toEqual(
       code('level1-not-allowed'),
+    );
+  });
+
+  test('same-day personal booking 3h ahead is accepted', async () => {
+    const r = await requestBookingLogic(db, 'g1', personal({ apptAt: new Date(NOW.getTime() + 3 * HOUR).toISOString() }), NOW);
+    expect(r.status).toBe('pending_caregiver');
+  });
+
+  test('appointment in the past is rejected too-soon', async () => {
+    await expect(
+      requestBookingLogic(db, 'g1', personal({ apptAt: new Date(NOW.getTime() - MIN).toISOString() }), NOW),
+    ).rejects.toEqual(
+      expect.objectContaining({ details: expect.objectContaining({ code: 'too-soon' }), message: 'That time has already passed.' }),
     );
   });
 
@@ -193,5 +209,77 @@ describeEmu('level 1 groups', () => {
     const g = (await db.doc(`groups/${b.groupId}`).get()).data()!;
     expect(g.caregiverId).toBe(o.caregiverId);
     expect(g.status).toBe('open');
+  });
+});
+
+describeEmu('same-day groups', () => {
+  beforeEach(async () => {
+    await clearDb();
+    await seedFamily(db);
+    await seedCaregiver(db, 'farid', { rating: 4.9, certs: ['firstAid'], skills: ['wheelchair', 'medicineCollection'] });
+  });
+
+  const newGroup = (pickupAt: Date, apptAt: Date): RequestInput => ({
+    ...personal({ level: 1, apptAt: apptAt.toISOString() }),
+    newGroup: { pickupPointId: 'elmina-west', pickupTime: pickupAt.toISOString() },
+  });
+
+  test('groupLockAt is pickup - 24h only when that is still ahead', () => {
+    const pickup = new Date(NOW.getTime() + 3 * 24 * HOUR);
+    expect(groupLockAt(pickup, NOW)).toEqual(new Date(pickup.getTime() - 24 * HOUR));
+    expect(groupLockAt(new Date(NOW.getTime() + 2 * HOUR), NOW)).toBeNull();
+    expect(groupLockAt(new Date(NOW.getTime() + 24 * HOUR), NOW)).toBeNull();
+  });
+
+  test("new same-day group has lockAt null and the founder's hold lasts until pickup", async () => {
+    const pickup = new Date(NOW.getTime() + 2 * HOUR);
+    const r = await requestBookingLogic(db, 'g1', newGroup(pickup, new Date(NOW.getTime() + 3 * HOUR)), NOW);
+    const b = await bookingOf(db, r.bookingId);
+    expect(b.lockAt).toBeNull();
+    const g = (await db.doc(`groups/${b.groupId}`).get()).data()!;
+    expect(g.lockAt).toBeNull();
+    expect(toDate(g.heldSeats[0].until)).toEqual(pickup);
+  });
+
+  test('group 3 days out keeps lockAt = pickup - 24h', async () => {
+    const appt = new Date(NOW.getTime() + 3 * 24 * HOUR);
+    const pickup = new Date(appt.getTime() - 90 * MIN);
+    const r = await requestBookingLogic(db, 'g1', newGroup(pickup, appt), NOW);
+    const b = await bookingOf(db, r.bookingId);
+    const expected = new Date(pickup.getTime() - 24 * HOUR);
+    expect(toDate(b.lockAt)).toEqual(expected);
+    const g = (await db.doc(`groups/${b.groupId}`).get()).data()!;
+    expect(toDate(g.lockAt)).toEqual(expected);
+    expect(toDate(g.heldSeats[0].until)).toEqual(expected);
+  });
+
+  test('new group with pickup in the past is rejected too-soon', async () => {
+    await expect(
+      requestBookingLogic(db, 'g1', newGroup(new Date(NOW.getTime() - MIN), new Date(NOW.getTime() + 3 * HOUR)), NOW),
+    ).rejects.toEqual(code('too-soon'));
+  });
+
+  test('joining a group whose pickup has passed is rejected too-soon', async () => {
+    await seedGroup(db, 'grp', 1);
+    const late = new Date(APPT.getTime() - 75 * MIN + MIN);
+    await expect(
+      requestBookingLogic(db, 'g1', { ...personal({ patientId: 'p1', level: 1 }), groupId: 'grp' }, late),
+    ).rejects.toEqual(code('too-soon'));
+  });
+
+  test('cancelling a confirmed same-day group booking before admin lock uses the before-lock outcome', async () => {
+    const appt = new Date(NOW.getTime() + 3 * HOUR);
+    await db.doc('groups/sd').set({
+      status: 'open', lockAt: null, pickupAt: Timestamp.fromDate(new Date(NOW.getTime() + 2 * HOUR)),
+      riderBookingIds: ['b1'], riderInitials: ['ZA'], heldSeats: [], capacity: 3, caregiverId: 'farid',
+    });
+    await db.doc('bookings/b1').set({
+      familyId: 'f1', guardianUid: 'g1', patientId: 'p1', patientSnapshot: { name: 'Zainab' },
+      status: 'confirmed', level: 1, package: 'saver', groupId: 'sd', lockAt: null, offerKind: 'groupJoin',
+      apptAt: Timestamp.fromDate(appt), price: { paidSen: 4000, refundSen: 0, creditSen: 0 },
+    });
+    const res = await cancelBookingLogic(db, 'g1', { bookingId: 'b1' }, NOW);
+    const expected = cancelOutcome({ pkg: 'saver', level: 1, paidSen: 4000, afterLock: false });
+    expect(res).toEqual({ status: 'cancelled', refundSen: expected.refundSen, creditSen: expected.creditSen });
   });
 });
