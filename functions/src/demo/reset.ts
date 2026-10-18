@@ -43,9 +43,12 @@ export async function resetDemoLogic(db: Firestore, auth: Auth, now: Date): Prom
   for (const uid of await demoUids(auth)) {
     refs.push(...(await db.collection(`users/${uid}/notifications`).get()).docs.map((d) => d.ref));
   }
-  const groups = await db.collection('groups')
-    .where('__name__', '>=', db.doc('groups/demo-')).where('__name__', '<', db.doc('groups/demo.')).get();
-  refs.push(...groups.docs.map((d) => d.ref));
+  // `demo-` groups, plus the legacy `seed-` ones from the old seed that the deployed database still holds.
+  for (const prefix of ['demo', 'seed']) {
+    const groups = await db.collection('groups')
+      .where('__name__', '>=', db.doc(`groups/${prefix}-`)).where('__name__', '<', db.doc(`groups/${prefix}.`)).get();
+    refs.push(...groups.docs.map((d) => d.ref));
+  }
 
   const writer = db.bulkWriter();
   for (const r of refs) void writer.delete(r);

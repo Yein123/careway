@@ -17,7 +17,7 @@ export type DemoRole = 'parent' | 'user' | 'self' | 'caregiver';
 export const DEMO_ACCOUNTS: Record<DemoRole, { email: string; name: string }> = {
   parent: { email: 'parent@gmail.com', name: 'Siti binti Yusof' },
   user: { email: 'user@gmail.com', name: 'Aisyah binti Hassan' },
-  self: { email: 'self@gmail.com', name: 'Hafiz bin Ismail' },
+  self: { email: 'self@gmail.com', name: 'Hafiz bin Osman' },
   caregiver: { email: 'caregiver@gmail.com', name: 'Ravi S.' },
 };
 export const DEMO_FAMILY_IDS = ['demo-parent-family', 'demo-user-family', 'demo-self-family'];
@@ -140,7 +140,7 @@ export async function seedDemoLogic(db: Firestore, auth: Auth, now: Date): Promi
     privacy: { helperOnly: true, sendUpdates: true }, updatedAt: ts(now), updatedBy: parent,
   }, { merge: true });
   await db.doc('families/demo-self-family/patients/hafiz').set({
-    name: 'Hafiz bin Ismail', age: 58, relationship: 'Myself', phone: '014-770 3318', mobility: 'independent',
+    name: 'Hafiz bin Osman', age: 58, relationship: 'Myself', phone: '014-770 3318', mobility: 'independent',
     extraHelp: [], conditions: 'High blood pressure', surgery: '', allergy: 'None known', medicines: 'Amlodipine',
     clinics: 'Cardiology, Hospital Sungai Buloh', talkNotes: '',
     contacts: [{ name: 'Hafiz', role: 'Patient' }],
@@ -164,8 +164,8 @@ export async function seedDemoLogic(db: Firestore, auth: Auth, now: Date): Promi
   const todayMidnight = new Date(Date.parse(`${mytDate(now)}T00:00:00+08:00`));
   const cutoff = new Date(todayMidnight.getTime() + 21 * HOUR);
   const firstToday = nextHalfHour(now);
-  // Today, then day+2 .. day+8 (tomorrow is inside the old 24h lead window and stays unseeded).
-  for (const day of [0, 2, 3, 4, 5, 6, 7, 8]) {
+  // Today, then the next eight days.
+  for (let day = 0; day <= 8; day++) {
     // Local midnight of the trip day (UTC+8).
     const localMidnight = new Date(Date.parse(`${mytDate(new Date(now.getTime() + day * 24 * HOUR))}T00:00:00+08:00`));
     for (const [i, [pointId, h, m, riders, helperEmail]] of GROUP_PLAN.entries()) {

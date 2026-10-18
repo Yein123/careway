@@ -1,6 +1,7 @@
 import { getAuth } from 'firebase-admin/auth';
 import { Timestamp } from 'firebase-admin/firestore';
 import { DEMO_ACCOUNTS, seedDemoLogic } from '../src/seed';
+import { groupLockAt } from '../src/booking/request';
 import { resetDemoLogic } from '../src/demo/reset';
 import { clearDb, describeEmu, testDb } from './helpers';
 
@@ -44,6 +45,14 @@ describeEmu('demo seed', () => {
       const pickup = (g.data().pickupAt as Timestamp).toDate().getTime();
       expect(pickup - NOW.getTime()).toBeGreaterThanOrEqual(30 * MIN);
     }
+    for (const point of ['elmina-lakeside', 'elmina-west', 'denai-alam']) {
+      const t = (await db.doc(`groups/demo-2026-10-18-${point}`).get()).data()!;
+      const pickup = (t.pickupAt as Timestamp).toDate();
+      const want = groupLockAt(pickup, NOW);
+      // Pickup is under 24h from NOW, so there is no timed lock.
+      expect(want).toBeNull();
+      expect(t.lockAt).toBeNull();
+    }
     const later = await db.collection('groups').where('date', '==', '2026-10-19').get();
     expect(later.docs[0].data().lockAt).not.toBeNull();
   });
@@ -73,6 +82,7 @@ describeEmu('demo seed', () => {
     await db.doc('deliveries/d1').set({ familyId: fam, status: 'paid' });
     await db.doc('offers/o2').set({ deliveryId: 'd1', caregiverId: 'nurul', status: 'offered' });
     await db.doc('groups/other').set({ date: '2026-10-20' });
+    await db.doc('groups/seed-2026-10-20-elmina-lakeside').set({ date: '2026-10-20' });
     await db.doc('bookings/other').set({ familyId: 'someone-else' });
     await db.doc('offers/o3').set({ bookingId: 'other', status: 'offered' });
 
@@ -82,6 +92,7 @@ describeEmu('demo seed', () => {
     expect((await db.doc('offers/o1').get()).exists).toBe(false);
     expect((await db.doc('deliveries/d1').get()).exists).toBe(false);
     expect((await db.doc('offers/o2').get()).exists).toBe(false);
+    expect((await db.doc('groups/seed-2026-10-20-elmina-lakeside').get()).exists).toBe(false);
     expect((await db.doc('groups/other').get()).exists).toBe(true);
     expect((await db.doc('bookings/other').get()).exists).toBe(true);
     expect((await db.doc('offers/o3').get()).exists).toBe(true);

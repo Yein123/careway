@@ -185,6 +185,6 @@ describeEmu('demo seed', () => {
     const u = (await db.doc(`users/${aisyah.uid}`).get()).data()!;
     expect(u.role).toBe('guardian');
     expect((await db.collection(`families/${u.familyId}/patients`).get()).size).toBe(2);
-    expect((await db.collection('groups').get()).size).toBe(24);
+    expect((await db.collection('groups').get()).size).toBe(27);
   });
 });
