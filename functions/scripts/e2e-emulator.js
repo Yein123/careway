@@ -51,7 +51,7 @@ function localAt(days, hh, mm) {
 
 (async () => {
   await call('seedDemo', null);
-  const aisyah = await signIn('aisyah@careway.demo');
+  const aisyah = await signIn('user@gmail.com');
   const farid = await signIn('farid@careway.demo');
   const nurul = await signIn('nurul@careway.demo');
   const familyId = (await get(`users/${aisyah.uid}`)).familyId;
@@ -60,7 +60,7 @@ function localAt(days, hh, mm) {
   // Level 1: join the Elmina Lakeside group 3 days out.
   const appt = localAt(3, 9, 0);
   const dateKey = new Date(appt.getTime() + 8 * 3600e3).toISOString().slice(0, 10);
-  const groupId = `seed-${dateKey}-elmina-lakeside`;
+  const groupId = `demo-${dateKey}-elmina-lakeside`;
   const req = await call('requestBooking', {
     patientId: 'zainab', level: 1, groupId,
     pickup: { label: 'Home', lat: 3.1885, lng: 101.5165 },
@@ -92,11 +92,12 @@ function localAt(days, hh, mm) {
   const firstCerts = ((await get(`caregivers/${firstCg}`)).certificates || []).map((c) => c.type);
   check('L2 offer goes to a trained escort', firstCerts.includes('trainedEscort'), firstCerts.join(','));
   // Decline → cascade to the next qualified escort.
-  const firstUser = firstCg === nurul.uid ? nurul : await signIn('meiling@careway.demo');
+  const signInUid = async (uid) => signIn((await get(`users/${uid}`)).email);
+  const firstUser = await signInUid(firstCg);
   await call('respondToOffer', { offerId: o2.id, accept: false }, firstUser);
   const o3 = await openOffer('bookingId', r2.bookingId);
   check('decline cascades to the next escort', o3 && o3.data().caregiverId !== firstCg);
-  const second = o3.data().caregiverId === nurul.uid ? nurul : await signIn('meiling@careway.demo');
+  const second = await signInUid(o3.data().caregiverId);
   await call('respondToOffer', { offerId: o3.id, accept: true }, second);
   const p2 = await call('payBooking', { bookingId: r2.bookingId, method: 'tng' }, aisyah);
   check('L2 pays the RM 144 estimate', p2.paidSen === 14400, `paid ${p2.paidSen}`);
@@ -106,15 +107,12 @@ function localAt(days, hh, mm) {
   // Medicine delivery: distance fee, matched to a medicine-collection helper.
   const d = await call('requestDelivery', {
     patientId: 'zainab', pharmacyId: 'hsb', window: '8:00 – 10:00 AM',
-    windowStart: localAt(2, 8, 0).toISOString(), docs: { card: true, ic: true, letter: true },
+    windowStart: localAt(2, 8, 0).toISOString(), method: 'fpx', docs: { card: true, ic: true, letter: true },
   }, aisyah);
   const del = await get(`deliveries/${d.deliveryId}`);
   check('delivery fee = RM 5 + RM 0.50/km', del.fee.totalSen === 500 + Math.round(50 * del.routeKm), `${del.routeKm} km → ${del.fee.totalSen} sen`);
-  const o4 = await openOffer('deliveryId', d.deliveryId);
-  const helperEmail = (await get(`users/${o4.data().caregiverId}`)).email;
-  await call('respondToOffer', { offerId: o4.id, accept: true }, await signIn(helperEmail));
-  await call('payDelivery', { deliveryId: d.deliveryId, method: 'fpx' }, aisyah);
-  check('delivery booked after payment', (await get(`deliveries/${d.deliveryId}`)).status === 'booked');
+  // Deliveries are paid and booked at request time (a helper is assigned immediately).
+  check('delivery booked and paid at request', del.status === 'booked' && del.payment.status === 'paid' && !!del.caregiverId);
 
   // Security: another user cannot pay this family's booking.
   try {

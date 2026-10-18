@@ -40,15 +40,36 @@ firebase emulators:start --only auth,firestore,functions   # Firestore on 8085, 
 flutter run -d chrome --dart-define=USE_EMULATOR=true       # in another terminal
 ```
 
-On the sign-in screen (debug builds) tap **Load demo data**, then sign in:
+On the sign-in screen (debug builds) tap **Load demo data**, then sign in (password `careway123` for all):
 
-| Role | Email | Password |
+| Role | Email | Who |
 |---|---|---|
-| Guardian | aisyah@careway.demo | careway123 |
-| Group helper | farid@careway.demo, ravi@careway.demo | careway123 |
-| Escort | nurul@careway.demo, meiling@careway.demo | careway123 |
+| Guardian | parent@gmail.com | Siti, books for her child Adam |
+| Guardian | user@gmail.com | Aisyah, books for her mother Zainab |
+| Guardian (self) | self@gmail.com | Hafiz, books for himself |
+| Caregiver | caregiver@gmail.com | Ravi |
+| Extra caregivers | farid@careway.demo, nurul@careway.demo, meiling@careway.demo | group helpers and escorts |
 
 Note: the Functions emulator does not run scheduled jobs (offer expiry, group lock, delivery progress) on its own.
+
+## Admin and live demo
+
+One-time setup for the admin account (application default login only, no key file):
+
+```bash
+gcloud auth application-default login
+node functions/scripts/grant-admin.js admin@careway.demo <password>
+```
+
+Sign in on the web app with that account; you land on `/admin`. Press **Reset demo for today** before each run to re-seed today's groups and the scenario 3 visit.
+
+Run sheet:
+
+1. **S1, guardian (user@gmail.com, phone):** book today's group. On the admin page press **Accept**, **Reject**, **Not found** or **Group set**; each result arrives as a push on the phone. For a medicine delivery, press **Next stage**: pushes arrive at collecting and delivered only.
+2. **S2, self booking (self@gmail.com):** same flow as S1.
+3. **S3, caregiver:** sign in as caregiver@gmail.com on the phone, open today's visit and tap through the steps, while the guardian view runs in a laptop browser as user@gmail.com.
+
+Push notifications are Android only. The push trigger (`onNotificationCreated`) runs in `us-central1` because the Firestore database is `nam5`; all callables stay in `asia-southeast1`.
 
 ## Tests
 
