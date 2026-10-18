@@ -106,7 +106,10 @@ Stages still advance and show on the live screen. A notification (and therefore 
 ## 10. Logo and icon
 
 - `flutter_launcher_icons`: Android launcher icon (adaptive, background `#6C4EE3`), web favicon and PWA icons, all from `careway-icon-512-square.png`.
-- In-app logo: the welcome, sign-in and get-started screens use the same image. The caregiver sign-in uses `careway-caregiver-icon-512.png`.
+- In-app logo: `CwLogo` (`lib/core/widgets/cw_page.dart`) draws the image instead of the SVG mark, keeping the "CareWay" wordmark. It gains a `caregiver` flag:
+  - **Guardian side** (welcome, get started, guardian sign-in): `careway-icon-512-square.png` (purple tile).
+  - **Caregiver side** (caregiver sign-in, which today has its own hand-drawn mark at `sign_in_screen.dart:281`, and the caregiver shell/home header): `careway-caregiver-icon-512.png` (teal C on white), with the "Caregiver" label.
+- The launcher icon is the guardian icon. A single APK has one launcher icon; giving caregivers their own would mean a second app flavour, which is out of scope.
 
 ## 11. Rules
 
