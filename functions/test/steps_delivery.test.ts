@@ -181,10 +181,10 @@ describeEmu('demo seed', () => {
     await seedDemoLogic(db, getAuth(), NOW);
     await seedDemoLogic(db, getAuth(), NOW);
     expect((await db.collection('caregivers').get()).size).toBe(4);
-    const aisyah = await getAuth().getUserByEmail('aisyah@careway.demo');
+    const aisyah = await getAuth().getUserByEmail('user@gmail.com');
     const u = (await db.doc(`users/${aisyah.uid}`).get()).data()!;
     expect(u.role).toBe('guardian');
     expect((await db.collection(`families/${u.familyId}/patients`).get()).size).toBe(2);
-    expect((await db.collection('groups').get()).size).toBe(21);
+    expect((await db.collection('groups').get()).size).toBe(24);
   });
 });
