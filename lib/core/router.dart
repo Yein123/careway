@@ -79,6 +79,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: 'live', builder: (_, s) => DeliveryStatusScreen(deliveryId: s.pathParameters['id']!)),
           GoRoute(path: 'done', builder: (_, s) => DeliveryStatusScreen(deliveryId: s.pathParameters['id']!)),
+          GoRoute(path: 'rate', builder: (_, s) => DeliveryRateScreen(deliveryId: s.pathParameters['id']!)),
+          GoRoute(
+            path: 'feedback',
+            builder: (_, s) => DeliveryFeedbackScreen(
+              deliveryId: s.pathParameters['id']!,
+              stars: int.tryParse(s.uri.queryParameters['stars'] ?? '') ?? 5,
+            ),
+          ),
           GoRoute(path: 'thanks', builder: (_, s) => DeliveryThanksScreen(deliveryId: s.pathParameters['id']!)),
         ],
       ),

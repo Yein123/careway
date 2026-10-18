@@ -19,7 +19,7 @@ class CwChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(22);
+    final radius = BorderRadius.circular(12);
     return Semantics(
       button: true,
       selected: selected,
@@ -32,7 +32,7 @@ class CwChip extends StatelessWidget {
           onTap: enabled ? onTap : null,
           child: Container(
             constraints: const BoxConstraints(minHeight: 44),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               borderRadius: radius,
               border: Border.all(
@@ -43,11 +43,11 @@ class CwChip extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                 color: !enabled
                     ? CwColors.muted.withValues(alpha: 0.5)
-                    : (selected ? CwColors.primaryDark : CwColors.ink),
+                    : (selected ? const Color(0xFF3A2591) : CwColors.ink),
               ),
             ),
           ),

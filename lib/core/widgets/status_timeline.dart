@@ -14,94 +14,98 @@ class TimelineStep {
   final String? detail;
 }
 
+/// Vertical step list as drawn in the design: filled dot when done, thick
+/// ring for the current step, thin ring for upcoming ones.
 class StatusTimeline extends StatelessWidget {
   const StatusTimeline({
     super.key,
     required this.steps,
     this.accent = CwColors.primary,
+    this.ring = CwColors.lilacLine,
   });
 
   final List<TimelineStep> steps;
   final Color accent;
+
+  /// Ring colour for upcoming steps.
+  final Color ring;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         for (var i = 0; i < steps.length; i++)
-          _Row(step: steps[i], last: i == steps.length - 1, accent: accent),
+          _Row(step: steps[i], last: i == steps.length - 1, accent: accent, ring: ring),
       ],
     );
   }
 }
 
 class _Row extends StatelessWidget {
-  const _Row({required this.step, required this.last, required this.accent});
+  const _Row({required this.step, required this.last, required this.accent, required this.ring});
 
   final TimelineStep step;
   final bool last;
   final Color accent;
+  final Color ring;
 
   @override
   Widget build(BuildContext context) {
     final done = step.state == TimelineState.done;
     final current = step.state == TimelineState.current;
+    final Widget dot = done
+        ? Container(width: 18, height: 18, decoration: BoxDecoration(color: accent, shape: BoxShape.circle))
+        : current
+            ? Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(color: CwColors.white, shape: BoxShape.circle, border: Border.all(color: accent, width: 4)),
+              )
+            : Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(color: CwColors.white, shape: BoxShape.circle, border: Border.all(color: ring, width: 2)),
+              );
+    final sub = step.at != null ? DateFormat('h:mm a').format(step.at!.toLocal()) : step.detail;
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Column(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: done
-                      ? accent
-                      : (current ? CwColors.white : CwColors.surface),
-                  border: Border.all(
-                    color: done || current ? accent : CwColors.line,
-                    width: current ? 3 : 2,
+          SizedBox(
+            width: 22,
+            child: Column(
+              children: [
+                dot,
+                if (!last)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      constraints: const BoxConstraints(minHeight: 30),
+                      color: done ? accent : CwColors.line,
+                    ),
                   ),
-                ),
-                child: done
-                    ? const Icon(Icons.check, size: 14, color: CwColors.white)
-                    : null,
-              ),
-              if (!last)
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: done ? accent : CwColors.line,
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 18, top: 2),
+              padding: EdgeInsets.only(bottom: last ? 0 : 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     step.label,
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: current ? FontWeight.w800 : FontWeight.w600,
-                      color: step.state == TimelineState.upcoming
-                          ? CwColors.muted
-                          : CwColors.ink,
+                      fontSize: 14,
+                      fontWeight: step.state == TimelineState.upcoming ? FontWeight.w700 : FontWeight.w800,
+                      color: step.state == TimelineState.upcoming ? const Color(0xFF8E8AA3) : CwColors.ink,
                     ),
                   ),
-                  if (step.at != null)
-                    Text(
-                      DateFormat('h:mm a').format(step.at!),
-                      style: CwText.small,
-                    )
-                  else if (step.detail != null)
-                    Text(step.detail!, style: CwText.small),
+                  if (sub != null) ...[
+                    const SizedBox(height: 2),
+                    Text(sub, style: const TextStyle(fontSize: 12, color: CwColors.muted)),
+                  ],
                 ],
               ),
             ),

@@ -18,7 +18,7 @@ class CwPage extends StatelessWidget {
     required this.children,
     this.bottom,
     this.background = CwColors.surface,
-    this.padding = const EdgeInsets.fromLTRB(20, 8, 20, 24),
+    this.padding = const EdgeInsets.fromLTRB(20, 16, 20, 24),
   });
 
   final String? title;
@@ -57,10 +57,10 @@ class CwPage extends StatelessWidget {
             ),
             if (bottom != null)
               Container(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
                 decoration: const BoxDecoration(
                   color: CwColors.white,
-                  border: Border(top: BorderSide(color: CwColors.line)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: bottom,
               ),

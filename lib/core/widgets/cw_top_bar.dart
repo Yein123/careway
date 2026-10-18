@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../icons.dart';
 import '../theme.dart';
 
 /// Screen header: back button, title and optional step label, as in the design.
@@ -23,12 +24,12 @@ class CwTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Row(
         children: [
           if (showBack) ...[
             SquareIconButton(
-              icon: Icons.chevron_left,
+              svg: CwIcons.back,
               label: 'Back',
               onTap:
                   onBack ??
@@ -46,7 +47,13 @@ class CwTopBar extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (stepLabel != null) Text(stepLabel!, style: CwText.small),
+                if (stepLabel != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    stepLabel!,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: CwColors.muted),
+                  ),
+                ],
               ],
             ),
           ),
@@ -60,54 +67,74 @@ class CwTopBar extends StatelessWidget {
 class SquareIconButton extends StatelessWidget {
   const SquareIconButton({
     super.key,
-    required this.icon,
+    this.icon,
+    this.svg,
     required this.label,
     this.onTap,
     this.color,
     this.badge,
+    this.size = 44,
+    this.background = CwColors.white,
   });
 
-  final IconData icon;
+  final IconData? icon;
+
+  /// A [CwIcons] glyph, drawn instead of [icon].
+  final String? svg;
   final String label;
   final VoidCallback? onTap;
   final Color? color;
   final int? badge;
+  final double size;
+  final Color background;
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: label,
+    return Semantics(
+      button: true,
+      label: label,
       child: Material(
-        color: CwColors.white,
+        color: background,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
           onTap: onTap,
           child: SizedBox(
-            width: 44,
-            height: 44,
+            width: size,
+            height: size,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Icon(icon, color: color ?? CwColors.ink, semanticLabel: label),
+                if (svg != null)
+                  CwIcon(
+                    svg!,
+                    size: svg == CwIcons.back ? 20 : 22,
+                    strokeWidth: svg == CwIcons.back ? 2.4 : 2,
+                    color: color ?? CwColors.ink,
+                    semanticLabel: label,
+                  )
+                else
+                  Icon(icon, color: color ?? CwColors.ink, semanticLabel: label),
                 if (badge != null && badge! > 0)
                   Positioned(
                     top: 6,
                     right: 6,
                     child: Container(
                       key: const ValueKey('icon-badge'),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 1,
-                      ),
+                      constraints: const BoxConstraints(minWidth: 18),
+                      height: 18,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: CwColors.pink,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(color: CwColors.white, width: 2),
                       ),
                       child: Text(
                         '$badge',
                         style: const TextStyle(
                           fontSize: 10,
+                          height: 1,
                           fontWeight: FontWeight.w800,
                           color: CwColors.white,
                         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../icons.dart';
 import '../theme.dart';
 
 /// Label above a text field, as in the design's `.cw-lab` inputs.
@@ -140,7 +141,14 @@ class CwCheckRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(7),
                 ),
                 child: checked
-                    ? const Icon(Icons.check, size: 14, color: CwColors.white)
+                    ? const Center(
+                        child: CwIcon(
+                          CwIcons.check,
+                          size: 14,
+                          strokeWidth: 3,
+                          color: CwColors.white,
+                        ),
+                      )
                     : null,
               ),
               const SizedBox(width: 10),

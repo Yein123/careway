@@ -118,3 +118,15 @@ class CwText {
     color: CwColors.primary,
   );
 }
+
+/// Caregiver app palette (teal-grey, from the Cg* artboards).
+class CgColors {
+  static const surface = Color(0xFFF2F7F8);
+  static const ink = Color(0xFF14262B);
+  static const ink2 = Color(0xFF3D5056);
+  static const muted = Color(0xFF5B6F75);
+  static const faint = Color(0xFF8AA0A6);
+  static const line = Color(0xFFD5E3E7);
+  static const divider = Color(0xFFEDF3F5);
+  static const soft = Color(0xFFEAF3F5);
+}
