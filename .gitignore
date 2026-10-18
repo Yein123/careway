@@ -33,3 +33,6 @@ ios/Runner/GoogleService-Info.plist
 android/build/
 firestore-debug.log
 firebase-debug.log
+
+# Claude Code agent worktrees
+.claude/worktrees/
