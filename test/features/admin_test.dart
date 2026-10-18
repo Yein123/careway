@@ -37,6 +37,12 @@ void main() {
     expect(find.text('CareWay demo admin'), findsOneWidget);
   });
 
+  testWidgets('admin@gmail.com with a guardian profile lands on /admin', (tester) async {
+    const user = AppUser(uid: 'a2', name: 'Admin', email: 'admin@gmail.com', role: UserRole.guardian);
+    final c = await pumpApp(tester, Fakes(uid: 'a2', users: [user]), at: '/home');
+    expect(locationOf(c), '/admin');
+  });
+
   testWidgets('guardian visiting /admin is sent to /home', (tester) async {
     final c = await pumpApp(tester, guardianFakes(), at: '/admin');
     expect(locationOf(c), '/home');

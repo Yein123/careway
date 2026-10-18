@@ -20,6 +20,8 @@ describe('requireAdmin', () => {
     expect(() => requireAdmin({ uid: 'u' })).toThrow(expect.objectContaining({ code: 'permission-denied' }));
     expect(() => requireAdmin({ uid: 'u', token: { admin: false } })).toThrow(HttpsError);
     expect(requireAdmin({ uid: 'u', token: { admin: true } })).toBe('u');
+    expect(requireAdmin({ uid: 'u', token: { email: 'admin@gmail.com' } })).toBe('u');
+    expect(() => requireAdmin({ uid: 'u', token: { email: 'user@gmail.com' } })).toThrow(HttpsError);
   });
 });
 

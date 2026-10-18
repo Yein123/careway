@@ -2,6 +2,10 @@ import 'firestore_utils.dart';
 
 enum UserRole { guardian, caregiver, admin }
 
+/// Signing in with this email opens the admin page (also accepted by the
+/// Firestore rules and `requireAdmin`).
+const adminEmail = 'admin@gmail.com';
+
 class SavedPlace {
   const SavedPlace({
     required this.label,
@@ -106,6 +110,9 @@ class AppUser {
   final UserSettings settings;
   final List<SavedPlace> savedPlaces;
   final List<PaymentMethod> paymentMethods;
+
+  bool get isAdmin =>
+      role == UserRole.admin || email.trim().toLowerCase() == adminEmail;
 
   String get initials => initialsOf(name);
   String get firstName => name.trim().split(RegExp(r'\s+')).first;

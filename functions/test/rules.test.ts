@@ -131,6 +131,13 @@ describeEmu('firestore rules', () => {
     await assertFails(getDoc(doc(as('g2'), 'offers/o1')));
   });
 
+  test('admin@gmail.com reads like an admin without the claim', async () => {
+    const adm = env.authenticatedContext('adm2', { email: 'admin@gmail.com' }).firestore();
+    await assertSucceeds(getDoc(doc(adm, 'bookings/b2')));
+    await assertSucceeds(getDoc(doc(adm, 'families/f1')));
+    await assertFails(updateDoc(doc(adm, 'bookings/b1'), { rating: 5 }));
+  });
+
   test('admin token cannot write bookings', async () => {
     const adm = env.authenticatedContext('adm', { admin: true }).firestore();
     await assertFails(updateDoc(doc(adm, 'bookings/b1'), { rating: 5 }));

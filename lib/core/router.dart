@@ -55,7 +55,7 @@ String? roleRedirect(Ref ref, String location) {
   if (uid == null) return public ? null : '/';
   final user = ref.read(currentUserProvider).value;
   if (user == null) return null;
-  if (user.role == UserRole.admin) return location == '/admin' ? null : '/admin';
+  if (user.isAdmin) return location == '/admin' ? null : '/admin';
   if (location == '/admin') return user.role == UserRole.caregiver ? '/cg' : '/home';
   final inCaregiverApp = location == '/cg' || location.startsWith('/cg/');
   if (user.role == UserRole.caregiver) {
