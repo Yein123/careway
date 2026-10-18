@@ -151,6 +151,19 @@ describeEmu('payment, cancellation and settlement', () => {
     expect((await receiptsFor(a.bookingId)).filter((r) => r.kind === 'refund')).toHaveLength(1);
   });
 
+  test('lockGroupTx counts seeded placeholder riders (no booking docs) in n', async () => {
+    const a = await startGroupAndPay('g1', 'p1');
+    const g = (await db.doc(`groups/${a.groupId}`).get()).data()!;
+    await db.doc(`groups/${a.groupId}`).update({ riderBookingIds: [...g.riderBookingIds, 'ph-r0', 'ph-r1'], lockAt: null });
+    expect(await lockGroupTx(db, a.groupId, NOW)).toBe(true);
+    const b = await bookingOf(db, a.bookingId);
+    expect(b.price.finalShareSen).toBe(2200);
+    expect(b.price.refundSen).toBe(1800);
+    const notes = await db.collection('users/g1/notifications').get();
+    const locked = notes.docs.map((d) => d.data()).find((n) => n.type === 'group-locked')!;
+    expect(locked.body).toContain('3 riders are going');
+  });
+
   test('lockGroupTx on a locked group returns false and writes nothing', async () => {
     const a = await startGroupAndPay('g1', 'p1');
     expect(await lockGroupTx(db, a.groupId, NOW)).toBe(true);

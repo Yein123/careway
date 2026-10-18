@@ -100,6 +100,42 @@ describeEmu('demo seed', () => {
     expect(res.seeded.s3BookingId).toBe('demo-s3-visit');
   });
 
+  test('reset removes groups founded by demo bookings but keeps groups with a non-demo rider', async () => {
+    const r = await seedDemoLogic(db, getAuth(), NOW);
+    const fam = (await db.doc(`users/${r.uids.parent}`).get()).data()!.familyId;
+    await db.doc('bookings/demo-founder').set({ familyId: fam, groupId: 'xyz', status: 'confirmed' });
+    await db.doc('groups/xyz').set({
+      date: '2026-10-20', riderBookingIds: ['demo-founder'], heldSeats: [{ bookingId: 'demo-founder' }],
+    });
+    await db.doc('bookings/demo-mixed').set({ familyId: fam, groupId: 'mixed', status: 'confirmed' });
+    await db.doc('bookings/real-rider').set({ familyId: 'someone-else', groupId: 'mixed', status: 'confirmed' });
+    await db.doc('groups/mixed').set({ date: '2026-10-20', riderBookingIds: ['demo-mixed', 'real-rider'], heldSeats: [] });
+    await resetDemoLogic(db, getAuth(), NOW);
+    expect((await db.doc('groups/xyz').get()).exists).toBe(false);
+    expect((await db.doc('groups/mixed').get()).exists).toBe(true);
+  });
+
+  test("seed puts Denai Alam's group today on Nurul and gives Nurul paediatric", async () => {
+    const r = await seedDemoLogic(db, getAuth(), NOW);
+    const nurul = (await getAuth().getUserByEmail('nurul@careway.demo')).uid;
+    const today = (await db.doc('groups/demo-2026-10-17-denai-alam').get()).data()!;
+    expect(today.caregiverId).toBe(nurul);
+    const tomorrow = (await db.doc('groups/demo-2026-10-18-denai-alam').get()).data()!;
+    expect(tomorrow.caregiverId).toBe(r.uids.caregiver);
+    const cg = (await db.doc(`caregivers/${nurul}`).get()).data()!;
+    expect(cg.skills).toContain('paediatric');
+    expect(cg.certificates.map((c: { type: string }) => c.type)).toContain('paediatric');
+  });
+
+  test('seed and reset set every caregiver on duty', async () => {
+    const r = await seedDemoLogic(db, getAuth(), NOW);
+    await db.doc(`caregivers/${r.uids.caregiver}`).update({ onDuty: false });
+    await seedDemoLogic(db, getAuth(), NOW);
+    const all = await db.collection('caregivers').get();
+    expect(all.size).toBe(4);
+    expect(all.docs.every((d) => d.data().onDuty === true)).toBe(true);
+  });
+
   test('reset is idempotent', async () => {
     await resetDemoLogic(db, getAuth(), NOW);
     const a = await counts();

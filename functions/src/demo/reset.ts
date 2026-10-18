@@ -21,12 +21,17 @@ export async function resetDemoLogic(db: Firestore, auth: Auth, now: Date): Prom
   const refs: FirebaseFirestore.DocumentReference[] = [];
   const bookingIds: string[] = [];
   const deliveryIds: string[] = [];
+  const foundedGroupIds = new Set<string>();
 
   for (const col of ['bookings', 'deliveries', 'receipts']) {
     const snap = await db.collection(col).where('familyId', 'in', DEMO_FAMILY_IDS).get();
     for (const d of snap.docs) {
       refs.push(d.ref);
-      if (col === 'bookings') bookingIds.push(d.id);
+      if (col === 'bookings') {
+        bookingIds.push(d.id);
+        const gid = d.data().groupId;
+        if (typeof gid === 'string' && gid) foundedGroupIds.add(gid);
+      }
       if (col === 'deliveries') deliveryIds.push(d.id);
     }
   }
@@ -48,6 +53,21 @@ export async function resetDemoLogic(db: Firestore, auth: Auth, now: Date): Prom
     const groups = await db.collection('groups')
       .where('__name__', '>=', db.doc(`groups/${prefix}-`)).where('__name__', '<', db.doc(`groups/${prefix}.`)).get();
     refs.push(...groups.docs.map((d) => d.ref));
+  }
+
+  // Groups founded from the demo accounts have random ids; drop those that hold only demo bookings.
+  const demoBookings = new Set(bookingIds);
+  const queued = new Set(refs.map((r) => r.path));
+  for (const gid of foundedGroupIds) {
+    const ref = db.doc(`groups/${gid}`);
+    if (queued.has(ref.path)) continue;
+    const g = (await ref.get()).data();
+    if (!g) continue;
+    const members: string[] = [
+      ...(g.riderBookingIds ?? []),
+      ...(g.heldSeats ?? []).map((h: { bookingId: string }) => h.bookingId),
+    ];
+    if (members.every((id) => demoBookings.has(id))) refs.push(ref);
   }
 
   const writer = db.bulkWriter();

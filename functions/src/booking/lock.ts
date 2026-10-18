@@ -33,7 +33,9 @@ export async function lockGroupTx(db: Firestore, groupId: string, now: Date): Pr
     const riderIds: string[] = group.riderBookingIds ?? [];
     const snaps = await Promise.all(riderIds.map((id) => tx.get(db.doc(`bookings/${id}`))));
     const riders = snaps.filter((s) => s.exists && s.data()!.status === 'confirmed');
-    const n = riders.length;
+    // Seeded groups hold placeholder rider ids with no booking doc; they still count as riders.
+    const placeholders = snaps.filter((s) => !s.exists).length;
+    const n = riders.length + placeholders;
     if (n === 0) {
       tx.update(ref, { status: 'cancelled', heldSeats: [] });
       return true;

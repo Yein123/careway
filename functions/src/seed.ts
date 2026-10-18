@@ -42,7 +42,7 @@ const CAREGIVERS = [
   },
   {
     email: 'nurul@careway.demo', name: 'Nurul H.', agency: 'Partner agency · trained caregiver', rating: 4.9, phone: '011-2345 8870',
-    languages: ['Malay', 'English'], skills: ['wheelchair', 'transfer', 'consultSitIn', 'dementia'], certs: ['firstAid', 'patientHandling', 'trainedEscort'],
+    languages: ['Malay', 'English'], skills: ['wheelchair', 'transfer', 'consultSitIn', 'dementia', 'paediatric'], certs: ['firstAid', 'patientHandling', 'trainedEscort', 'paediatric'],
     vehicle: { model: 'Silver Perodua Alza', plate: 'VDK 5532', driver: '' },
   },
   {
@@ -64,6 +64,8 @@ const GROUP_PLAN: Array<[string, number, number, string[], string]> = [
   ['elmina-west', 7, 30, ['NH'], 'meiling@careway.demo'],
   ['denai-alam', 8, 0, [], DEMO_ACCOUNTS.caregiver.email],
 ];
+/** caregiver@gmail.com is busy all day with the scenario 3 visit, so today's Denai Alam group uses Nurul. */
+const TODAY_DENAI_HELPER = 'nurul@careway.demo';
 
 const SETTINGS = { language: 'English', textScale: 1, notif: { visitUpdates: true, reminders: true, promos: false } };
 
@@ -155,7 +157,7 @@ export async function seedDemoLogic(db: Firestore, auth: Auth, now: Date): Promi
     const prev = (await db.doc(`caregivers/${uid}`).get()).data();
     await db.doc(`caregivers/${uid}`).set({
       displayName: c.name, agency: c.agency, zone: 'Elmina', phone: c.phone,
-      onDuty: prev?.onDuty ?? true, rating: c.rating, ratingCount: prev?.ratingCount ?? 120,
+      onDuty: true, rating: c.rating, ratingCount: prev?.ratingCount ?? 120,
       languages: c.languages, skills: c.skills, certificates: c.certs.map(cert), home: ELMINA_HOME, vehicle: c.vehicle,
     });
   }
@@ -168,7 +170,7 @@ export async function seedDemoLogic(db: Firestore, auth: Auth, now: Date): Promi
   for (let day = 0; day <= 8; day++) {
     // Local midnight of the trip day (UTC+8).
     const localMidnight = new Date(Date.parse(`${mytDate(new Date(now.getTime() + day * 24 * HOUR))}T00:00:00+08:00`));
-    for (const [i, [pointId, h, m, riders, helperEmail]] of GROUP_PLAN.entries()) {
+    for (const [i, [pointId, h, m, riders, planHelper]] of GROUP_PLAN.entries()) {
       const pickupAt = day === 0
         ? new Date(firstToday.getTime() + i * 30 * MINUTE)
         : new Date(localMidnight.getTime() + (h * 60 + m) * MINUTE);
@@ -179,6 +181,7 @@ export async function seedDemoLogic(db: Firestore, auth: Auth, now: Date): Promi
       groups++;
       if ((await ref.get()).exists) continue;
       const apptStart = new Date(pickupAt.getTime() + 60 * MINUTE);
+      const helperEmail = day === 0 && pointId === 'denai-alam' ? TODAY_DENAI_HELPER : planHelper;
       const helper = CAREGIVERS.find((c) => c.email === helperEmail)!;
       const lockAt = groupLockAt(pickupAt, now);
       await ref.set({
