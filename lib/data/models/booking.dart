@@ -231,6 +231,24 @@ const stepLabels = {
   'home': 'Home safely',
 };
 
+class Vehicle {
+  const Vehicle({required this.model, required this.plate, this.driver = ''});
+
+  final String model;
+  final String plate;
+
+  /// Separate driver (group vans); empty when the helper drives.
+  final String driver;
+
+  factory Vehicle.fromMap(Map<String, dynamic> m) => Vehicle(
+    model: m['model'] as String? ?? '',
+    plate: m['plate'] as String? ?? '',
+    driver: m['driver'] as String? ?? '',
+  );
+
+  Map<String, dynamic> toMap() => {'model': model, 'plate': plate, 'driver': driver};
+}
+
 class Booking {
   const Booking({
     required this.id,
@@ -255,6 +273,8 @@ class Booking {
     this.caregiverPhone,
     this.caregiverSkills = const [],
     this.caregiverLanguages = const [],
+    this.caregiverVehicle,
+    this.rideRequestedAt,
     this.offerCaregiverName,
     this.offerExpiresAt,
     this.notMatchedReason,
@@ -290,6 +310,10 @@ class Booking {
   final String? caregiverPhone;
   final List<String> caregiverSkills;
   final List<String> caregiverLanguages;
+  final Vehicle? caregiverVehicle;
+
+  /// When a Level 1 guardian said the patient is ready for the ride home.
+  final DateTime? rideRequestedAt;
 
   /// Name of the caregiver the current open offer went to, and when it expires.
   final String? offerCaregiverName;
@@ -339,6 +363,8 @@ class Booking {
     caregiverPhone: m['caregiverPhone'] as String?,
     caregiverSkills: readStrings(m['caregiverSkills']),
     caregiverLanguages: readStrings(m['caregiverLanguages']),
+    caregiverVehicle: m['caregiverVehicle'] == null ? null : Vehicle.fromMap(readMap(m['caregiverVehicle'])),
+    rideRequestedAt: readDate(m['rideRequestedAt']),
     offerCaregiverName: m['offerCaregiverName'] as String?,
     offerExpiresAt: readDate(m['offerExpiresAt']),
     notMatchedReason: m['notMatchedReason'] as String?,
@@ -379,6 +405,8 @@ class Booking {
     'caregiverPhone': caregiverPhone,
     'caregiverSkills': caregiverSkills,
     'caregiverLanguages': caregiverLanguages,
+    'caregiverVehicle': caregiverVehicle?.toMap(),
+    'rideRequestedAt': writeDate(rideRequestedAt),
     'offerCaregiverName': offerCaregiverName,
     'offerExpiresAt': writeDate(offerExpiresAt),
     'notMatchedReason': notMatchedReason,

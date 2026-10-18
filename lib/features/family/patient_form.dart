@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/cw_button.dart';
 import '../../core/widgets/cw_chip.dart';
+import '../../core/widgets/design_kit.dart';
 import '../../core/widgets/fields.dart';
 import '../../core/widgets/step_label.dart';
 import '../../data/models/family.dart';
@@ -29,6 +30,7 @@ class PatientForm extends StatefulWidget {
     this.saveLabel = 'Save',
     required this.onSave,
     this.onCancel,
+    this.saveTick = false,
   });
 
   final Patient? initial;
@@ -36,6 +38,9 @@ class PatientForm extends StatefulWidget {
   final String saveLabel;
   final Future<void> Function(Patient) onSave;
   final VoidCallback? onCancel;
+
+  /// Book step 1: show the "Save to my family list" tick (on by default).
+  final bool saveTick;
 
   @override
   State<PatientForm> createState() => _PatientFormState();
@@ -57,6 +62,7 @@ class _PatientFormState extends State<PatientForm> {
   late bool _helperOnly = widget.initial?.helperOnly ?? true;
   late bool _sendUpdates = widget.initial?.sendUpdates ?? true;
   bool _busy = false;
+  bool _keep = true;
   String? _error;
 
   @override
@@ -94,6 +100,7 @@ class _PatientFormState extends State<PatientForm> {
       clinics: _clinics.text.trim(),
       talkNotes: _talk.text.trim(),
       helperOnly: _helperOnly,
+      inFamilyList: widget.saveTick ? _keep : null,
       sendUpdates: _sendUpdates,
     );
     try {
@@ -181,17 +188,15 @@ class _PatientFormState extends State<PatientForm> {
           ),
           gap(22),
           const SectionTitle('Privacy and updates'),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
+          _SwitchRow(
+            label: 'Show profile to the assigned helper only',
             value: _helperOnly,
             onChanged: (v) => setState(() => _helperOnly = v),
-            title: const Text('Show profile to the assigned helper only', style: CwText.bodyBold),
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
+          _SwitchRow(
+            label: 'Send visit updates to me',
             value: _sendUpdates,
             onChanged: (v) => setState(() => _sendUpdates = v),
-            title: const Text('Send visit updates to me', style: CwText.bodyBold),
           ),
         ],
         if (_error != null) ...[
@@ -199,6 +204,26 @@ class _PatientFormState extends State<PatientForm> {
           Text(_error!, style: const TextStyle(color: CwColors.pink, fontWeight: FontWeight.w700)),
         ],
         gap(20),
+        if (widget.saveTick) ...[
+          Material(
+            color: CwColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: CwCheckRow(
+                boxKey: const ValueKey('pf-keep'),
+                checked: _keep,
+                onChanged: (v) => setState(() => _keep = v),
+                child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Save to my family list', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+                  SizedBox(height: 2),
+                  Text('Pick them in one tap next time. You can add medical details later.', style: TextStyle(fontSize: 11, color: CwColors.muted)),
+                ]),
+              ),
+            ),
+          ),
+          gap(12),
+        ],
         CwButton(label: widget.saveLabel, loading: _busy, onPressed: _valid ? _save : null),
         if (widget.onCancel != null) ...[
           gap(8),
@@ -207,4 +232,21 @@ class _PatientFormState extends State<PatientForm> {
       ],
     );
   }
+}
+
+class _SwitchRow extends StatelessWidget {
+  const _SwitchRow({required this.label, required this.value, required this.onChanged});
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(children: [
+          Expanded(child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+          const SizedBox(width: 10),
+          CwSwitch(value: value, label: label, onChanged: onChanged),
+        ]),
+      );
 }

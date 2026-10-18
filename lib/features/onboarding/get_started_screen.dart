@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/art.dart';
+import '../../core/icons.dart';
 import '../../core/router.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/cw_button.dart';
@@ -110,13 +111,14 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> {
       backgroundColor: CwColors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
           child: Column(
             children: [
               Row(
                 children: [
                   SquareIconButton(
-                    icon: Icons.chevron_left,
+                    svg: CwIcons.back,
+                    background: CwColors.surface,
                     label: 'Back',
                     onTap: () =>
                         _i == 0 ? context.go('/') : setState(() => _i--),
@@ -145,13 +147,16 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> {
                             ),
                             child: const Text(
                               'Skip',
-                              style: TextStyle(fontWeight: FontWeight.w800),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
               Expanded(child: _onForm ? _form() : _slide()),
             ],
           ),
@@ -168,7 +173,7 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 SvgPicture.string(
                   onboardingArtSvgs[_i],
                   width: 220,
@@ -177,7 +182,16 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> {
                 const SizedBox(height: 16),
                 Text('STEP ${_i + 1}', style: CwText.overline),
                 const SizedBox(height: 12),
-                Text(title, textAlign: TextAlign.center, style: CwText.h1),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 26,
+                    height: 1.2,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 Text(
                   body,
@@ -188,7 +202,7 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> {
                     color: CwColors.muted,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

@@ -3,17 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
+import '../../core/icons.dart';
 import '../../core/money.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/async_view.dart';
-import '../../core/widgets/cw_button.dart';
-import '../../core/widgets/cw_card.dart';
-import '../../core/widgets/cw_chip.dart';
-import '../../core/widgets/cw_page.dart';
-import '../../core/widgets/step_label.dart';
+import '../../core/widgets/design_kit.dart';
 import '../../data/models/booking.dart';
 import '../../data/providers.dart';
 import '../../domain/pricing.dart';
+import '../home/home_screen.dart' show placeName;
 import 'booking_common.dart';
 import 'booking_draft.dart';
 
@@ -22,10 +20,16 @@ const _ticks = {
   GroupPackage.flex: ['Shared van + helper', 'Home as soon as done', 'Free cancel 24h before'],
 };
 const _tags = {GroupPackage.saver: 'Lowest price', GroupPackage.flex: 'Less waiting'};
+const _tagTones = {
+  GroupPackage.saver: (CwColors.tealSoft, CwColors.tealDark),
+  GroupPackage.flex: (CwColors.amberSoft, CwColors.amber),
+};
 const _notes = {
   GroupPackage.saver: 'Group Saver: cancel after 24 hours and you get CareWay credit. Waiting time is never charged.',
   GroupPackage.flex: 'Group Flex: cancel after 24 hours and you get 50% back. Waiting time is never charged.',
 };
+const _green = CwColors.successDark;
+const _greenSoft = Color(0xFFDDF5EC);
 
 /// 7 · Group found: choose a package and add-ons (Match.dc.html).
 class PackageScreen extends ConsumerWidget {
@@ -35,21 +39,37 @@ class PackageScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final booking = ref.watch(bookingProvider(bookingId));
-    return CwPage(
-      title: 'Group found',
-      stepLabel: 'Step 3 of 3 · Choose a package',
-      showBack: false,
-      children: [
-        AsyncView<Booking?>(
-          value: booking,
-          onRetry: () => ref.invalidate(bookingProvider(bookingId)),
-          isEmpty: (b) => b == null,
-          empty: const EmptyState(icon: Icons.search_off, title: 'Booking not found'),
-          data: (b) => _Body(b!),
-        ),
-      ],
+    return booking.when(
+      loading: () => const Scaffold(backgroundColor: CwColors.surface, body: Center(child: CircularProgressIndicator())),
+      error: (_, _) => DesignScaffold(children: [
+        const PageHeader(title: 'Group found', subtitle: 'Step 3 of 3 · Choose a package', help: true),
+        AsyncView<Booking?>(value: booking, onRetry: () => ref.invalidate(bookingProvider(bookingId)), data: (_) => const SizedBox()),
+      ]),
+      data: (b) => b == null
+          ? const DesignScaffold(children: [
+              PageHeader(title: 'Group found', subtitle: 'Step 3 of 3 · Choose a package', help: true),
+              EmptyState(icon: Icons.search_off, title: 'Booking not found'),
+            ])
+          : _Body(b),
     );
   }
+}
+
+class _Tick extends StatelessWidget {
+  const _Tick(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          width: 18,
+          height: 18,
+          decoration: const BoxDecoration(color: _greenSoft, shape: BoxShape.circle),
+          child: const Center(child: CwIcon(CwIcons.check, size: 11, strokeWidth: 3.6, color: _green)),
+        ),
+        const SizedBox(width: 7),
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 12, height: 1.35))),
+      ]);
 }
 
 class _Body extends ConsumerWidget {
@@ -79,93 +99,170 @@ class _Body extends ConsumerWidget {
           ));
     }
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text(others == 0 ? '$first starts the group' : '$first joins $others neighbour${others == 1 ? '' : 's'}', style: CwText.h2),
-      Text(
-        'Pickup ${b.pickupAt == null ? '' : timeLabel(b.pickupAt!)} · ${dayLabel(b.apptAt)} ${timeLabel(b.apptAt)} · Helper $helper',
-        style: CwText.small,
-      ),
-      const Gap(16),
-      const SectionTitle('Pick a package'),
-      for (final p in GroupPackage.values) ...[
-        CwCard(
-          selected: draft.package == p,
-          onTap: () => notifier.update((d) => d.copyWith(package: p)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Icon(draft.package == p ? Icons.radio_button_checked : Icons.radio_button_off,
-                  color: draft.package == p ? CwColors.primary : CwColors.muted),
-              const SizedBox(width: 8),
-              Expanded(child: Text(p.label, style: CwText.h3)),
-              Text('RM ${groupShareSen(p, n) ~/ 100}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-            ]),
-            const SizedBox(height: 4),
-            CwBadge(_tags[p]!.toUpperCase()),
-            const SizedBox(height: 6),
-            for (final t in _ticks[p]!)
-              Row(children: [
-                const Icon(Icons.check, size: 16, color: CwColors.success),
-                const SizedBox(width: 6),
-                Expanded(child: Text(t, style: CwText.small)),
+    return DesignScaffold(
+      gap: 14,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
+      bottom: Row(children: [
+        Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Text(
+            '${draft.package.label}${addons.isEmpty ? '' : ' + ${addons.length} add-on${addons.length == 1 ? '' : 's'}'}',
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: CwColors.muted),
+          ),
+          const SizedBox(height: 1),
+          Text(formatRm(total), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CwColors.primaryDark)),
+        ]),
+        const SizedBox(width: 14),
+        Expanded(
+          child: BigButton(
+            label: 'Continue to payment',
+            trailingIcon: CwIcons.arrowRight,
+            height: 54,
+            fontSize: 16,
+            onPressed: () {
+              notifier.update((d) => d.copyWith(addons: addons));
+              context.push('/booking/${b.id}/pay');
+            },
+          ),
+        ),
+      ]),
+      children: [
+        const PageHeader(title: 'Group found', subtitle: 'Step 3 of 3 · Choose a package', help: true),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(color: CwColors.primary, borderRadius: BorderRadius.circular(20)),
+          child: Row(children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(color: CwColors.white, shape: BoxShape.circle),
+              child: const Center(child: CwIcon(CwIcons.check, size: 22, strokeWidth: 3, color: CwColors.primary)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(others == 0 ? '$first starts the group' : '$first joins $others neighbour${others == 1 ? '' : 's'}',
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: CwColors.white)),
+                const SizedBox(height: 3),
+                Text(
+                  'Pickup ${b.pickupAt == null ? '' : timeLabel(b.pickupAt!)} · ${placeName(b.hospitalId)} ${timeLabel(b.apptAt)} · Helper $helper',
+                  style: const TextStyle(fontSize: 12, height: 1.4, color: Color(0xEBFFFFFF)),
+                ),
               ]),
+            ),
           ]),
         ),
-        const Gap(10),
-      ],
-      Text(_notes[draft.package]!, style: CwText.small),
-      const Gap(8),
-      Text(
-        'Price for $n rider${n == 1 ? '' : 's'}. If more neighbours join before the group locks, your price drops and you get the difference back.',
-        style: CwText.small,
-      ),
-      const Gap(18),
-      const SectionTitle('Services provided', trailing: CwBadge('INCLUDED', color: CwColors.successDark, background: CwColors.successSoft)),
-      Wrap(spacing: 6, runSpacing: 6, children: [
-        for (final s in ['Pre-registration', 'Help at registration', 'Queue tracking', 'Live family updates']) CwBadge(s),
-      ]),
-      const Gap(18),
-      const SectionTitle('Add-ons', trailing: Text('Optional', style: CwText.small)),
-      for (final a in Addon.values) ...[
-        _AddonRow(
-          addon: a,
-          available: addonAvailable(a, b),
-          selected: addons.contains(a),
-          helper: helper,
-          onTap: () => toggle(a),
+        const SectionLabel('Pick a package', size: 16),
+        IntrinsicHeight(
+          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            for (final p in GroupPackage.values) ...[
+              if (p != GroupPackage.values.first) const SizedBox(width: 10),
+              Expanded(
+                child: SelectCard(
+                  on: draft.package == p,
+                  radius: 18,
+                  padding: const EdgeInsets.all(12),
+                  onTap: () => notifier.update((d) => d.copyWith(package: p)),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    Row(children: [
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                          decoration: BoxDecoration(color: _tagTones[p]!.$1, borderRadius: BorderRadius.circular(8)),
+                          child: Text(_tags[p]!,
+                              overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _tagTones[p]!.$2)),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Spacer(),
+                      Transform.scale(scale: 20 / 22, child: RadioDot(on: draft.package == p)),
+                    ]),
+                    const SizedBox(height: 10),
+                    Text(p.label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                    Text('RM ${groupShareSen(p, n) ~/ 100}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CwColors.primaryDark)),
+                    const SizedBox(height: 10),
+                    for (final t in _ticks[p]!) Padding(padding: const EdgeInsets.only(bottom: 7), child: _Tick(t)),
+                  ]),
+                ),
+              ),
+            ],
+          ]),
         ),
-        if (a == Addon.language && addons.contains(a))
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final l in langs)
-                CwChip(label: l, selected: draft.language == l, onTap: () => notifier.update((d) => d.copyWith(language: () => l))),
-            ]),
+        Transform.translate(
+          offset: const Offset(0, -4),
+          child: Text(
+            '${_notes[draft.package]!} Price for $n rider${n == 1 ? '' : 's'}; if more neighbours join before the group locks, you get the difference back.',
+            style: const TextStyle(fontSize: 11, height: 1.4, color: CwColors.muted),
           ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(color: CwColors.white, borderRadius: BorderRadius.circular(18)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+              Expanded(child: Text('Services provided', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800))),
+              Text('Included', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _green)),
+            ]),
+            const SizedBox(height: 10),
+            LayoutBuilder(
+              builder: (context, c) => Wrap(spacing: 10, runSpacing: 8, children: [
+                for (final s in ['Pre-registration', 'Help at registration', 'Queue tracking', 'Live family updates'])
+                  SizedBox(width: (c.maxWidth - 10) / 2, child: _Tick(s)),
+              ]),
+            ),
+          ]),
+        ),
+        const Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+          Expanded(child: Text('Add-ons', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800))),
+          Text('Optional', style: TextStyle(fontSize: 12, color: CwColors.muted)),
+        ]),
+        Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          for (final a in Addon.values) ...[
+            _AddonRow(
+              addon: a,
+              available: addonAvailable(a, b),
+              selected: addons.contains(a),
+              helper: helper,
+              onTap: () => toggle(a),
+            ),
+            if (a == Addon.language && addons.contains(a))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Wrap(spacing: 8, runSpacing: 8, children: [
+                  for (final l in langs)
+                    _LangChip(label: l, on: draft.language == l, onTap: () => notifier.update((d) => d.copyWith(language: () => l))),
+                ]),
+              ),
+          ],
+        ]),
       ],
-      const Gap(12),
-      CwCard(
-        color: CwColors.lilac,
-        borderColor: CwColors.lilac,
-        child: Row(children: [
-          Expanded(
-            child: Text(
-              '${draft.package.label}${addons.isEmpty ? '' : ' + ${addons.length} add-on${addons.length == 1 ? '' : 's'}'}',
-              style: CwText.bodyBold,
+    );
+  }
+}
+
+class _LangChip extends StatelessWidget {
+  const _LangChip({required this.label, required this.on, required this.onTap});
+  final String label;
+  final bool on;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        selected: on,
+        child: Material(
+          color: on ? CwColors.primary : CwColors.white,
+          shape: StadiumBorder(side: BorderSide(color: on ? CwColors.primary : CwColors.line, width: 2)),
+          child: InkWell(
+            customBorder: const StadiumBorder(),
+            onTap: onTap,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 40),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Center(widthFactor: 1, child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: on ? CwColors.white : CwColors.ink))),
             ),
           ),
-          Text(formatRm(total), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-        ]),
-      ),
-      const Gap(14),
-      CwButton(
-        label: 'Continue to payment',
-        onPressed: () {
-          notifier.update((d) => d.copyWith(addons: addons));
-          context.push('/booking/${b.id}/pay');
-        },
-      ),
-    ]);
-  }
+        ),
+      );
 }
 
 class _AddonRow extends StatelessWidget {
@@ -181,21 +278,40 @@ class _AddonRow extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 8),
         child: Opacity(
           opacity: available ? 1 : 0.55,
-          child: CwCard(
-            selected: selected,
-            onTap: available ? onTap : null,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(children: [
-              Icon(selected ? Icons.check_box : Icons.check_box_outline_blank, color: selected ? CwColors.primary : CwColors.muted),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(addon.label, style: CwText.bodyBold),
-                  if (!available) Text('Not offered by $helper', style: CwText.small),
+          child: Semantics(
+            checked: selected,
+            child: SelectCard(
+              on: selected,
+              radius: 14,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              onTap: available ? onTap : null,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 44),
+                child: Row(children: [
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: selected ? CwColors.primary : CwColors.white,
+                      border: Border.all(color: selected ? CwColors.primary : const Color(0xFFC9C4D9), width: 2),
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: selected ? const Center(child: CwIcon(CwIcons.check, size: 13, strokeWidth: 3.4, color: CwColors.white)) : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(addon.label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                        if (!available) Text('Not offered by $helper', style: const TextStyle(fontSize: 11, color: CwColors.muted)),
+                      ]),
+                    ),
+                  ),
+                  Text(formatRm(addon.sen), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: CwColors.primaryDark)),
                 ]),
               ),
-              Text(formatRm(addon.sen), style: CwText.bodyBold),
-            ]),
+            ),
           ),
         ),
       );

@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../config/places.dart';
+import '../../core/icons.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/avatar.dart';
-import '../../core/widgets/cw_button.dart';
-import '../../core/widgets/cw_card.dart';
-import '../../core/widgets/cw_chip.dart';
-import '../../core/widgets/cw_page.dart';
-import '../../core/widgets/step_label.dart';
+import '../../core/widgets/design_kit.dart';
 import '../../data/models/booking.dart';
 import '../../data/models/family.dart';
 import '../../data/providers.dart';
+import '../../domain/needs.dart';
 import '../family/patient_form.dart';
 import '../family/patient_profile_screen.dart';
 import 'booking_draft.dart';
 
-/// 3 · Book a visit (Book.dc.html; 23 · BookService.dc.html when opened from a service tile).
+/// 3 · Book a visit (Book.dc.html) and 23 · Book from a service tile
+/// (BookService.dc.html, when the draft already has a preferred level).
 class BookScreen extends ConsumerStatefulWidget {
   const BookScreen({super.key, this.service});
 
-  /// 'level1' | 'level2' when opened from a Home service tile.
+  /// 'level1' | 'level2' (deep link); Home tiles set the draft's preferred level instead.
   final String? service;
 
   @override
@@ -31,6 +31,8 @@ class BookScreen extends ConsumerStatefulWidget {
 
 class _BookScreenState extends ConsumerState<BookScreen> {
   bool _addingNew = false;
+  bool _calOpen = true;
+  bool _timeOpen = false;
   late DateTime _month;
 
   @override
@@ -49,10 +51,18 @@ class _BookScreenState extends ConsumerState<BookScreen> {
   @override
   Widget build(BuildContext context) {
     final draft = ref.watch(bookingDraftProvider);
-    final patients = ref.watch(patientsProvider).value ?? const <Patient>[];
+    final family = ref.watch(patientsProvider).value ?? const <Patient>[];
+    final oneOff = (ref.watch(allPatientsProvider).value ?? const <Patient>[])
+        .where((p) => p.id == draft.patientId && !p.inFamilyList);
+    final patients = [...family, ...oneOff];
     final user = ref.watch(currentUserProvider).value;
     final now = ref.watch(clockProvider)();
     final showForm = _addingNew || patients.isEmpty;
+    final service = draft.preferredLevel != null;
+    final selectedLevel = draft.level ?? draft.preferredLevel ?? 1;
+    final patient = patients.where((p) => p.id == draft.patientId).firstOrNull;
+    final l1Allowed = patient == null || level1Allowed(patient.mobility, patient.age);
+    final level = service && !l1Allowed ? 2 : selectedLevel;
 
     final pickups = [
       for (final p in user?.savedPlaces ?? const [])
@@ -60,156 +70,450 @@ class _BookScreenState extends ConsumerState<BookScreen> {
       for (final p in pickupPoints) PlaceRef(label: p.name, lat: p.lat, lng: p.lng),
     ];
 
-    return CwPage(
-      title: 'Book a visit',
-      stepLabel: 'Step 1 of 3 · Visit details',
-      bottom: CwButton(
-        label: 'Next: choose help',
-        onPressed: draft.detailsComplete ? () => context.push('/book/help') : null,
-      ),
+    void next() {
+      if (!service) {
+        context.push('/book/help');
+        return;
+      }
+      _set((d) => d.copyWith(level: level));
+      context.push(level == 2 ? '/book/escort' : '/book/groups');
+    }
+
+    return DesignScaffold(
+      gap: 20,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       children: [
-        const SectionTitle('Who is going?'),
-        if (patients.isNotEmpty) ...[
-          const Text('From your family list', style: CwText.small),
-          const Gap(8),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final p in patients)
-              _PatientChip(
-                initials: p.initials,
-                title: p.name.split(' ').first,
-                sub: '${p.relationship} · ${p.age}',
-                selected: draft.patientId == p.id && !_addingNew,
-                onTap: () {
-                  setState(() => _addingNew = false);
-                  _set((d) => d.copyWith(patientId: p.id));
-                },
+        PageHeader(title: 'Book a visit', subtitle: service ? 'Step 1 of 2 · Visit details' : 'Step 1 of 3 · Visit details', help: true),
+        StepBars(count: service ? 2 : 3, filled: 1),
+        if (service)
+          _Group(title: 'Type of help', children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(
+                child: _ServiceCard(
+                  key: const ValueKey('service-1'),
+                  tag: 'LEVEL 1 · GROUP',
+                  name: 'Shared ride + guidance',
+                  desc: 'Helper at drop-off and pickup, ride shared with neighbours',
+                  price: 'Up to RM 40',
+                  accent: CwColors.primary,
+                  tagColor: CwColors.primaryDark,
+                  onColor: CwColors.lilac,
+                  on: level == 1,
+                  onTap: l1Allowed ? () => _set((d) => d.copyWith(level: 1)) : null,
+                ),
               ),
-            _PatientChip(
-              initials: '+',
-              title: 'Someone new',
-              sub: 'Add details',
-              selected: _addingNew,
-              onTap: () => setState(() => _addingNew = true),
-            ),
-          ]),
-        ],
-        if (showForm) ...[
-          const Gap(12),
-          CwCard(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              const Text('Patient details', style: CwText.h3),
-              const SizedBox(height: 4),
-              const Text('Pick them in one tap next time. You can add medical details later.', style: CwText.small),
-              const Gap(12),
-              PatientForm(
-                saveLabel: 'Save to my family list',
-                onSave: (p) async {
-                  final id = await savePatientForFamily(ref, p);
-                  _set((d) => d.copyWith(patientId: id));
-                  if (mounted) setState(() => _addingNew = false);
-                },
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ServiceCard(
+                  key: const ValueKey('service-2'),
+                  tag: 'LEVEL 2 · PERSONAL',
+                  name: 'One-to-one escort',
+                  desc: "Escort stays for the whole visit, inside the doctor's room",
+                  price: 'RM 30 per hour',
+                  accent: CwColors.teal,
+                  tagColor: CwColors.tealDark,
+                  onColor: CwColors.tealSoft,
+                  on: level == 2,
+                  onTap: () => _set((d) => d.copyWith(level: 2)),
+                ),
               ),
             ]),
-          ),
-        ],
-        const Gap(22),
-        const SectionTitle('Where'),
-        const Text('Pick up from', style: CwText.label),
-        const Gap(8),
-        for (final p in pickups)
-          _OptionRow(
-            label: p.label,
-            selected: draft.pickup?.label == p.label,
-            onTap: () => _set((d) => d.copyWith(pickup: p)),
-          ),
-        const Gap(14),
-        const Text('Going to', style: CwText.label),
-        const Gap(8),
-        for (final h in hospitals)
-          _OptionRow(
-            label: h.name,
-            selected: draft.hospitalId == h.id,
-            onTap: () => _set((d) => d.copyWith(hospitalId: h.id)),
-          ),
-        const Gap(14),
-        const Text('Clinic or department', style: CwText.label),
-        const Gap(8),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          for (final c in clinicDepartments)
-            CwChip(label: c, selected: draft.clinic == c, onTap: () => _set((d) => d.copyWith(clinic: c))),
-        ]),
-        const Gap(22),
-        const SectionTitle('Appointment date'),
-        _Calendar(
-          month: _month,
-          now: now,
-          selected: draft.date,
-          onMonth: (m) => setState(() => _month = m),
-          onPick: (d) => _set((x) => x.copyWith(date: d)),
+            if (!l1Allowed)
+              Text(
+                patient.age < 18 ? 'Children under 18 always get Level 2.' : 'Lifting and transfer help needs Level 2.',
+                style: const TextStyle(fontSize: 12, color: CwColors.muted),
+              ),
+          ]),
+        _Group(
+          title: 'Who is going?',
+          trailing: patients.isEmpty ? null : 'From your family list',
+          children: [
+            if (patients.isNotEmpty)
+              LayoutBuilder(builder: (context, c) {
+                final w = (c.maxWidth - 24) / 4;
+                return Wrap(spacing: 8, runSpacing: 8, children: [
+                  for (var i = 0; i < patients.length; i++)
+                    SizedBox(
+                      width: w,
+                      child: _PatientChip(
+                        initials: patients[i].initials,
+                        tone: personTone(i),
+                        title: patients[i].name.split(' ').first,
+                        sub: '${patients[i].relationship}, ${patients[i].age}',
+                        selected: draft.patientId == patients[i].id && !_addingNew,
+                        onTap: () {
+                          setState(() => _addingNew = false);
+                          _set((d) => d.copyWith(patientId: patients[i].id));
+                        },
+                      ),
+                    ),
+                  SizedBox(
+                    width: w,
+                    child: _PatientChip(
+                      initials: '+',
+                      tone: const (CwColors.lilac, CwColors.primary),
+                      title: 'Someone new',
+                      sub: 'Add details',
+                      selected: _addingNew,
+                      onTap: () => setState(() => _addingNew = true),
+                    ),
+                  ),
+                ]);
+              }),
+            if (showForm)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: CwColors.white, borderRadius: BorderRadius.circular(18)),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  const Text('Patient details', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 12),
+                  PatientForm(
+                    saveTick: true,
+                    saveLabel: 'Use these details',
+                    onSave: (p) async {
+                      final id = await savePatientForFamily(ref, p);
+                      _set((d) => d.copyWith(patientId: id));
+                      if (mounted) setState(() => _addingNew = false);
+                    },
+                  ),
+                ]),
+              ),
+          ],
         ),
-        const Gap(6),
-        const Text('Greyed-out dates are less than 24 hours away.', style: CwText.small),
-        const Gap(22),
-        const SectionTitle('Appointment time'),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          for (final m in appointmentSlots)
-            CwChip(label: slotLabel(m), selected: draft.minutes == m, onTap: () => _set((d) => d.copyWith(minutes: m))),
+        _Group(title: 'Where', children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: CwColors.white, borderRadius: BorderRadius.circular(18)),
+            child: IntrinsicHeight(
+              child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                SizedBox(
+                  width: 24,
+                  child: Column(children: [
+                    const SizedBox(height: 30),
+                    Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(color: CwColors.white, shape: BoxShape.circle, border: Border.all(color: CwColors.primary, width: 3)),
+                    ),
+                    const Expanded(child: _DashedLine()),
+                    SvgPicture.string(
+                      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#6C4EE3"><path d="M12 2c-4 0-7 3-7 7 0 5.3 7 13 7 13s7-7.7 7-13c0-4-3-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>',
+                      width: 18,
+                      height: 18,
+                    ),
+                    const SizedBox(height: 80),
+                  ]),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    _Select<String>(
+                      label: 'Pick up from',
+                      hint: 'Choose a pickup place',
+                      value: pickups.any((p) => p.label == draft.pickup?.label) ? draft.pickup!.label : null,
+                      items: [for (final p in pickups) (p.label, p.label)],
+                      onChanged: (v) => _set((d) => d.copyWith(pickup: pickups.firstWhere((p) => p.label == v))),
+                    ),
+                    const SizedBox(height: 12),
+                    _Select<String>(
+                      label: 'Going to',
+                      hint: 'Choose a hospital or clinic',
+                      value: draft.hospitalId,
+                      items: [for (final h in hospitals) (h.id, h.name)],
+                      onChanged: (v) => _set((d) => d.copyWith(hospitalId: v)),
+                    ),
+                    const SizedBox(height: 12),
+                    _Select<String>(
+                      label: 'Clinic or department',
+                      hint: 'Choose a clinic',
+                      value: draft.clinic,
+                      items: [for (final c in clinicDepartments) (c, c)],
+                      onChanged: (v) => _set((d) => d.copyWith(clinic: v)),
+                    ),
+                  ]),
+                ),
+              ]),
+            ),
+          ),
         ]),
-        const Gap(10),
-        const Text('Book at least 24 hours ahead so we can match neighbours going to the same clinic.', style: CwText.small),
+        _Group(title: 'Appointment date', children: [
+          _FieldButton(
+            icon: CwIcons.calendar,
+            label: draft.date == null ? 'Choose a date' : DateFormat('EEE, d MMM yyyy').format(draft.date!),
+            open: _calOpen,
+            onTap: () => setState(() {
+              _calOpen = !_calOpen;
+              _timeOpen = false;
+            }),
+          ),
+          if (_calOpen)
+            _Calendar(
+              month: _month,
+              now: now,
+              selected: draft.date,
+              onMonth: (m) => setState(() => _month = m),
+              onPick: (d) {
+                _set((x) => x.copyWith(date: d));
+                setState(() => _calOpen = false);
+              },
+            ),
+        ]),
+        _Group(title: 'Appointment time', children: [
+          _FieldButton(
+            icon: CwIcons.clock,
+            label: draft.minutes == null ? 'Choose a time' : slotLabel(draft.minutes!),
+            open: _timeOpen,
+            onTap: () => setState(() {
+              _timeOpen = !_timeOpen;
+              _calOpen = false;
+            }),
+          ),
+          if (_timeOpen)
+            Container(
+              height: 220,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: CwColors.white, borderRadius: BorderRadius.circular(18)),
+              child: ListView.separated(
+                itemCount: appointmentSlots.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 4),
+                itemBuilder: (_, i) {
+                  final m = appointmentSlots[i];
+                  final on = draft.minutes == m;
+                  return Material(
+                    color: on ? CwColors.primary : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      key: ValueKey('slot-$m'),
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        _set((d) => d.copyWith(minutes: m));
+                        setState(() => _timeOpen = false);
+                      },
+                      child: SizedBox(
+                        height: 44,
+                        child: Center(
+                          child: Text(slotLabel(m),
+                              style: TextStyle(fontSize: 15, fontWeight: on ? FontWeight.w800 : FontWeight.w600, color: on ? CwColors.white : CwColors.ink)),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ]),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(color: CwColors.lilac, borderRadius: BorderRadius.circular(14)),
+          child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            CwIcon('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>', size: 18, strokeWidth: 2.2, color: CwColors.primary),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text('Book at least 24 hours ahead so we can match neighbours going to the same clinic.',
+                  style: TextStyle(fontSize: 12, height: 1.45, color: Color(0xFF3A2591))),
+            ),
+          ]),
+        ),
+        BigButton(
+          label: service ? (level == 2 ? 'Next: review escort' : 'Next: review visit') : 'Next: choose help',
+          trailingIcon: CwIcons.arrowRight,
+          height: 58,
+          onPressed: draft.detailsComplete ? next : null,
+        ),
       ],
     );
   }
 }
 
+class _Group extends StatelessWidget {
+  const _Group({required this.title, required this.children, this.trailing});
+  final String title;
+  final String? trailing;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+          Expanded(child: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800))),
+          if (trailing != null) Text(trailing!, style: const TextStyle(fontSize: 11, color: CwColors.muted)),
+        ]),
+        for (final c in children) ...[const SizedBox(height: 10), c],
+      ]);
+}
+
+class _ServiceCard extends StatelessWidget {
+  const _ServiceCard({
+    super.key,
+    required this.tag,
+    required this.name,
+    required this.desc,
+    required this.price,
+    required this.accent,
+    required this.tagColor,
+    required this.onColor,
+    required this.on,
+    required this.onTap,
+  });
+  final String tag;
+  final String name;
+  final String desc;
+  final String price;
+  final Color accent;
+  final Color tagColor;
+  final Color onColor;
+  final bool on;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Opacity(
+        opacity: onTap == null ? 0.55 : 1,
+        child: SelectCard(
+          on: on,
+          accent: accent,
+          onColor: onColor,
+          onTap: onTap,
+          padding: const EdgeInsets.all(12),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 122),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(tag, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.4, color: tagColor)),
+              const SizedBox(height: 6),
+              Text(name, style: const TextStyle(fontSize: 15, height: 1.25, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 6),
+              Text(desc, style: const TextStyle(fontSize: 11, height: 1.4, color: CwColors.muted)),
+              const SizedBox(height: 6),
+              Text(price, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: tagColor)),
+            ]),
+          ),
+        ),
+      );
+}
+
 class _PatientChip extends StatelessWidget {
-  const _PatientChip({required this.initials, required this.title, required this.sub, required this.selected, required this.onTap});
+  const _PatientChip({required this.initials, required this.tone, required this.title, required this.sub, required this.selected, required this.onTap});
   final String initials;
+  final (Color, Color) tone;
   final String title;
   final String sub;
   final bool selected;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-        width: 160,
-        child: CwCard(
-          selected: selected,
-          onTap: onTap,
-          padding: const EdgeInsets.all(10),
-          child: Row(children: [
-            Avatar(initials, size: 36, background: CwColors.pinkSoft, color: CwColors.pink),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: CwText.bodyBold),
-                Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis, style: CwText.small),
-              ]),
-            ),
+  Widget build(BuildContext context) => SelectCard(
+        on: selected,
+        onTap: onTap,
+        radius: 14,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 76),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            CircleAvatarText(initials, size: 34, tone: tone, fontSize: initials == '+' ? 20 : 12),
+            const SizedBox(height: 3),
+            Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 3),
+            Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: CwColors.muted)),
           ]),
         ),
       );
 }
 
-class _OptionRow extends StatelessWidget {
-  const _OptionRow({required this.label, required this.selected, required this.onTap});
+class _DashedLine extends StatelessWidget {
+  const _DashedLine();
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+        painter: _DashPainter(),
+        child: const SizedBox(width: 2, height: double.infinity),
+      );
+}
+
+class _DashPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = const Color(0xFFC9C4D9);
+    for (double y = 0; y + 4 <= size.height; y += 8) {
+      canvas.drawRect(Rect.fromLTWH(0, y, 2, 4), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Labelled dropdown styled like the design's selects (48 px, 2 px border).
+class _Select<T> extends StatelessWidget {
+  const _Select({required this.label, required this.hint, required this.value, required this.items, required this.onChanged});
   final String label;
-  final bool selected;
+  final String hint;
+  final T? value;
+  final List<(T, String)> items;
+  final ValueChanged<T> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: CwColors.muted)),
+        const SizedBox(height: 6),
+        Container(
+          height: 48,
+          padding: const EdgeInsets.only(left: 10, right: 6),
+          decoration: BoxDecoration(
+            color: CwColors.white,
+            border: Border.all(color: CwColors.line, width: 2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<T>(
+              value: value,
+              isExpanded: true,
+              borderRadius: BorderRadius.circular(12),
+              hint: Text(hint, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: CwColors.muted)),
+              icon: const CwIcon('<path d="m6 9 6 6 6-6"/>', size: 18, strokeWidth: 2.2, color: CwColors.muted),
+              style: const TextStyle(fontFamily: cwFont, fontSize: 14, fontWeight: FontWeight.w700, color: CwColors.ink),
+              items: [
+                for (final (v, l) in items) DropdownMenuItem<T>(value: v, child: Text(l, overflow: TextOverflow.ellipsis)),
+              ],
+              onChanged: (v) {
+                if (v != null) onChanged(v);
+              },
+            ),
+          ),
+        ),
+      ]);
+}
+
+class _FieldButton extends StatelessWidget {
+  const _FieldButton({required this.icon, required this.label, required this.open, required this.onTap});
+  final String icon;
+  final String label;
+  final bool open;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: CwCard(
-          selected: selected,
-          onTap: onTap,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(children: [
-            Icon(selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                color: selected ? CwColors.primary : CwColors.muted, size: 20),
-            const SizedBox(width: 10),
-            Expanded(child: Text(label, style: CwText.bodyBold)),
-          ]),
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        expanded: open,
+        child: Material(
+          color: CwColors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: open ? CwColors.primary : CwColors.white, width: 2)),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: onTap,
+            child: SizedBox(
+              height: 52,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(children: [
+                  CwIcon(icon, size: 20, strokeWidth: 2.2, color: CwColors.primary),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700))),
+                  RotatedBox(
+                    quarterTurns: open ? 2 : 0,
+                    child: const CwIcon('<path d="m6 9 6 6 6-6"/>', size: 18, strokeWidth: 2.2, color: CwColors.muted),
+                  ),
+                ]),
+              ),
+            ),
+          ),
         ),
       );
 }
@@ -222,6 +526,25 @@ class _Calendar extends StatelessWidget {
   final ValueChanged<DateTime> onMonth;
   final ValueChanged<DateTime> onPick;
 
+  Widget _nav(String label, String icon, VoidCallback? onTap) => Semantics(
+        button: true,
+        label: label,
+        excludeSemantics: true,
+        child: Material(
+          color: onTap == null ? CwColors.surface : CwColors.lilac,
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: onTap,
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: Center(child: CwIcon(icon, size: 18, strokeWidth: 2.4, color: onTap == null ? const Color(0xFFC9C4D9) : CwColors.primaryDark)),
+            ),
+          ),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final first = DateTime(month.year, month.month);
@@ -229,59 +552,60 @@ class _Calendar extends StatelessWidget {
     final days = DateTime(month.year, month.month + 1, 0).day;
     final localNow = now.toLocal();
     final canGoBack = DateTime(localNow.year, localNow.month).isBefore(first);
-    return CwCard(
-      padding: const EdgeInsets.all(12),
-      child: Column(children: [
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: CwColors.white, borderRadius: BorderRadius.circular(18)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
-          IconButton(
-            tooltip: 'Previous month',
-            onPressed: canGoBack ? () => onMonth(DateTime(month.year, month.month - 1)) : null,
-            icon: const Icon(Icons.chevron_left),
-          ),
-          Expanded(child: Text(DateFormat('MMMM yyyy').format(first), textAlign: TextAlign.center, style: CwText.h3)),
-          IconButton(
-            tooltip: 'Next month',
-            onPressed: () => onMonth(DateTime(month.year, month.month + 1)),
-            icon: const Icon(Icons.chevron_right),
-          ),
+          _nav('Previous month', CwIcons.back, canGoBack ? () => onMonth(DateTime(month.year, month.month - 1)) : null),
+          Expanded(child: Text(DateFormat('MMMM yyyy').format(first), textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800))),
+          _nav('Next month', CwIcons.chevronRight, () => onMonth(DateTime(month.year, month.month + 1))),
         ]),
+        const SizedBox(height: 10),
         Row(children: [
           for (final d in const ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'])
-            Expanded(child: Text(d, textAlign: TextAlign.center, style: CwText.small)),
+            Expanded(child: Text(d, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: CwColors.muted))),
         ]),
-        const SizedBox(height: 4),
+        const SizedBox(height: 10),
         for (var week = 0; week * 7 < offset + days; week++)
-          Row(children: [
-            for (var i = 0; i < 7; i++)
-              Expanded(child: _cell(week * 7 + i - offset + 1, days)),
-          ]),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Row(children: [
+              for (var i = 0; i < 7; i++) ...[
+                if (i > 0) const SizedBox(width: 2),
+                Expanded(child: _cell(week * 7 + i - offset + 1, days, localNow)),
+              ],
+            ]),
+          ),
+        const SizedBox(height: 8),
+        const Text('Greyed-out dates are less than 24 hours away.', style: TextStyle(fontSize: 11, color: CwColors.muted)),
       ]),
     );
   }
 
-  Widget _cell(int day, int days) {
-    if (day < 1 || day > days) return const SizedBox(height: 44);
+  Widget _cell(int day, int days, DateTime localNow) {
+    if (day < 1 || day > days) return const SizedBox(height: 40);
     final date = DateTime(month.year, month.month, day);
     final enabled = dayBookable(date, now);
     final isSel = selected != null && selected!.year == date.year && selected!.month == date.month && selected!.day == day;
-    return Padding(
-      padding: const EdgeInsets.all(2),
-      child: Material(
-        color: isSel ? CwColors.primary : Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
-        child: InkWell(
-          key: ValueKey('day-${date.year}-${date.month}-${date.day}'),
-          borderRadius: BorderRadius.circular(10),
-          onTap: enabled ? () => onPick(date) : null,
-          child: SizedBox(
-            height: 40,
-            child: Center(
-              child: Text(
-                '$day',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: isSel ? CwColors.white : (enabled ? CwColors.ink : CwColors.muted.withValues(alpha: 0.4)),
-                ),
+    final isToday = DateUtils.isSameDay(date, localNow);
+    return Material(
+      color: isSel ? CwColors.primary : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        key: ValueKey('day-${date.year}-${date.month}-${date.day}'),
+        borderRadius: BorderRadius.circular(12),
+        onTap: enabled ? () => onPick(date) : null,
+        child: SizedBox(
+          height: 40,
+          child: Center(
+            child: Text(
+              '$day',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSel ? FontWeight.w800 : (enabled ? FontWeight.w700 : FontWeight.w600),
+                decoration: isToday && !enabled ? TextDecoration.underline : null,
+                color: isSel ? CwColors.white : (enabled ? CwColors.ink : const Color(0xFFC9C4D9)),
               ),
             ),
           ),

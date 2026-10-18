@@ -76,11 +76,17 @@ final familyProvider = StreamProvider<Family?>((ref) {
   return ref.watch(familyRepoProvider).watchFamily(fid);
 });
 
-final patientsProvider = StreamProvider<List<Patient>>((ref) {
+/// Everyone saved under the family, including one-off patients.
+final allPatientsProvider = StreamProvider<List<Patient>>((ref) {
   final fid = ref.watch(familyIdProvider);
   if (fid == null) return Stream.value(const []);
   return ref.watch(familyRepoProvider).watchPatients(fid);
 });
+
+/// The family list: people saved with "Save to my family list" ticked.
+final patientsProvider = Provider<AsyncValue<List<Patient>>>(
+  (ref) => ref.watch(allPatientsProvider).whenData((l) => [for (final p in l) if (p.inFamilyList) p]),
+);
 
 final caregiverProfileProvider = StreamProvider<CaregiverProfile?>((ref) {
   final uid = ref.watch(authStateProvider).value;

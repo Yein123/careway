@@ -72,6 +72,7 @@ class Patient {
     this.sendUpdates = true,
     this.updatedAt,
     this.updatedBy = '',
+    this.inFamilyList = true,
   });
 
   final String id;
@@ -92,6 +93,9 @@ class Patient {
   final bool sendUpdates;
   final DateTime? updatedAt;
   final String updatedBy;
+
+  /// False for someone added for a single booking ("Save to my family list" unticked).
+  final bool inFamilyList;
 
   String get initials => initialsOf(name);
 
@@ -116,6 +120,7 @@ class Patient {
       sendUpdates: privacy['sendUpdates'] as bool? ?? true,
       updatedAt: readDate(m['updatedAt']),
       updatedBy: m['updatedBy'] as String? ?? '',
+      inFamilyList: m['inFamilyList'] as bool? ?? true,
     );
   }
 
@@ -136,6 +141,7 @@ class Patient {
     'privacy': {'helperOnly': helperOnly, 'sendUpdates': sendUpdates},
     'updatedAt': writeDate(updatedAt),
     'updatedBy': updatedBy,
+    'inFamilyList': inFamilyList,
   };
 
   Patient copyWith({
@@ -156,6 +162,7 @@ class Patient {
     bool? sendUpdates,
     DateTime? updatedAt,
     String? updatedBy,
+    bool? inFamilyList,
   }) => Patient(
     id: id,
     name: name ?? this.name,
@@ -175,6 +182,7 @@ class Patient {
     sendUpdates: sendUpdates ?? this.sendUpdates,
     updatedAt: updatedAt ?? this.updatedAt,
     updatedBy: updatedBy ?? this.updatedBy,
+    inFamilyList: inFamilyList ?? this.inFamilyList,
   );
 
   @override

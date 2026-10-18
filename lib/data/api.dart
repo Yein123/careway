@@ -59,6 +59,7 @@ abstract class CareWayApi {
   Future<int> payBooking(Map<String, dynamic> input);
   Future<CancelResult> cancelBooking(String bookingId);
   Future<String> advanceStep(String bookingId);
+  Future<void> requestRideHome(String bookingId);
   Future<void> submitSummary(String bookingId, Map<String, dynamic> summary);
   Future<String> requestDelivery(Map<String, dynamic> input);
   Future<void> payDelivery(String deliveryId, String method);
@@ -118,6 +119,10 @@ class FunctionsCareWayApi implements CareWayApi {
   @override
   Future<String> advanceStep(String bookingId) async =>
       (await _call('advanceStep', {'bookingId': bookingId}))['step'] as String;
+
+  @override
+  Future<void> requestRideHome(String bookingId) =>
+      _call('requestRideHome', {'bookingId': bookingId});
 
   @override
   Future<void> submitSummary(String bookingId, Map<String, dynamic> summary) =>

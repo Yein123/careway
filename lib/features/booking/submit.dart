@@ -10,7 +10,7 @@ import 'booking_draft.dart';
 /// The draft's patient, if loaded.
 Patient? draftPatient(WidgetRef ref) {
   final id = ref.watch(bookingDraftProvider).patientId;
-  for (final p in ref.watch(patientsProvider).value ?? const <Patient>[]) {
+  for (final p in ref.watch(allPatientsProvider).value ?? const <Patient>[]) {
     if (p.id == id) return p;
   }
   return null;

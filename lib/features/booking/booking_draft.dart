@@ -142,7 +142,7 @@ class BookingDraftNotifier extends Notifier<BookingDraft> {
 final bookingDraftProvider = NotifierProvider<BookingDraftNotifier, BookingDraft>(BookingDraftNotifier.new);
 
 /// Appointment time slots, minutes after midnight: 7:30 AM to 4:00 PM.
-final appointmentSlots = [for (var m = 7 * 60 + 30; m <= 16 * 60; m += 30) m];
+final appointmentSlots = [for (var m = 7 * 60 + 30; m <= 16 * 60 + 30; m += 15) m];
 
 String slotLabel(int minutes) {
   final h = minutes ~/ 60;

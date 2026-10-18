@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme.dart';
 import '../../core/widgets/tab_bars.dart';
 
 /// Guardian tabs: Home, Visits, Family, Account.
@@ -10,6 +11,7 @@ class GuardianShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+    backgroundColor: CwColors.surface,
     body: shell,
     bottomNavigationBar: GuardianTabBar(
       currentIndex: shell.currentIndex,
@@ -25,6 +27,7 @@ class CaregiverShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+    backgroundColor: CwColors.surface,
     body: shell,
     bottomNavigationBar: CaregiverTabBar(
       currentIndex: shell.currentIndex,

@@ -3,16 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
+import '../../core/icons.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/async_view.dart';
 import '../../core/widgets/avatar.dart';
-import '../../core/widgets/cw_button.dart';
-import '../../core/widgets/cw_card.dart';
-import '../../core/widgets/cw_chip.dart';
 import '../../core/widgets/cw_page.dart';
-import '../../core/widgets/step_label.dart';
+import '../../core/widgets/design_kit.dart';
 import '../../data/models/family.dart';
 import '../../data/providers.dart';
+import '../visits/live_visit_screen.dart' show callNumber;
 import 'patient_form.dart';
 
 /// Saves a patient for the signed-in user's family, stamping who and when.
@@ -62,34 +61,52 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
     final family = ref.watch(familyProvider).value;
     final user = ref.watch(currentUserProvider).value;
     final now = ref.watch(clockProvider)();
-    return CwPage(
-      title: _editing ? 'Edit profile' : 'Patient profile',
+    return DesignScaffold(
+      gap: 18,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       children: [
+        PageHeader(title: _editing ? 'Edit profile' : 'Patient profile', help: true),
         AsyncView<Patient?>(
           value: patient,
           onRetry: () => ref.invalidate(patientProvider(widget.patientId)),
           isEmpty: (p) => p == null,
           empty: const EmptyState(icon: Icons.person_off_outlined, title: 'Profile not found'),
-          data: (p) => _editing ? _edit(p!, family, user?.name) : _view(p!, family, now),
+          data: (p) => _editing ? _edit(p!, family, user?.name) : _view(p!, family, user?.name, now),
         ),
       ],
     );
   }
 
+  Widget _header(Patient p, Family? family, DateTime now) {
+    final keeper = family?.memberNames[p.updatedBy];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(color: CwColors.white, borderRadius: BorderRadius.circular(20)),
+      child: Row(children: [
+        CircleAvatarText(p.initials, size: 52, tone: personTone(0), fontSize: 18),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${p.name}, ${p.age}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+            if (p.updatedAt != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                '${keeper == null ? 'Updated' : 'Kept by $keeper ·'} updated ${agoLabel(p.updatedAt!, now)}',
+                style: const TextStyle(fontSize: 12, color: CwColors.muted),
+              ),
+            ],
+          ]),
+        ),
+      ]),
+    );
+  }
+
   Widget _edit(Patient p, Family? family, String? editor) {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      CwCard(
-        color: CwColors.lilac,
-        borderColor: CwColors.lilacLine,
-        child: Text(
-          'Only ${p.name.split(' ').first} and members of the ${family?.name ?? 'family'} group can edit this profile. '
-          'Helpers can view it during a visit but cannot change it.',
-          style: CwText.small,
-        ),
-      ),
-      const Gap(8),
-      Text('Editing as ${editor ?? 'guardian'}', style: CwText.small),
-      const Gap(16),
+      _header(p, family, ref.read(clockProvider)()),
+      const SizedBox(height: 18),
+      Text('Editing as ${editor ?? 'guardian'}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: CwColors.muted)),
+      const SizedBox(height: 14),
       PatientForm(
         initial: p,
         full: true,
@@ -103,79 +120,158 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
     ]);
   }
 
-  Widget _view(Patient p, Family? family, DateTime now) {
-    Widget row(String k, String v) => v.trim().isEmpty ? const SizedBox.shrink() : KeyValueRow(k, v);
-    final keeper = family?.memberNames[p.updatedBy];
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Row(children: [
-        Avatar(p.initials, size: 64, background: CwColors.pinkSoft, color: CwColors.pink),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('${p.name}, ${p.age}', style: CwText.h2),
-            if (p.updatedAt != null)
-              Text(
-                '${keeper == null ? 'Updated' : 'Kept by $keeper ·'} updated ${agoLabel(p.updatedAt!, now)}',
-                style: CwText.small,
+  Widget _view(Patient p, Family? family, String? me, DateTime now) {
+    final first = p.name.split(' ').first;
+    Widget group(String title, Widget child, {String? note}) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          SectionLabel(title),
+          const SizedBox(height: 8),
+          child,
+          if (note != null) ...[
+            const SizedBox(height: 8),
+            Text(note, style: const TextStyle(fontSize: 11, height: 1.4, color: CwColors.muted)),
+          ],
+        ]);
+    Widget card(List<Widget> rows) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          decoration: BoxDecoration(color: CwColors.white, borderRadius: BorderRadius.circular(14)),
+          child: Column(children: [
+            for (var i = 0; i < rows.length; i++)
+              Container(
+                decoration: BoxDecoration(border: i == rows.length - 1 ? null : const Border(bottom: BorderSide(color: kLine))),
+                child: rows[i],
               ),
           ]),
-        ),
-      ]),
-      const Gap(20),
-      const SectionTitle('Contact numbers'),
-      CwCard(
-        child: Column(children: [
-          if (p.phone.isNotEmpty) KeyValueRow('Patient · ${p.name.split(' ').first}', p.phone),
-          for (final c in p.contacts) KeyValueRow('${c.role} · ${c.name}', c.phone),
-          if (p.phone.isEmpty && p.contacts.isEmpty) const Text('No numbers saved yet.', style: CwText.muted),
-        ]),
+        );
+    Widget kv(String k, String v, {Color? color}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(k, style: const TextStyle(fontSize: 13, color: CwColors.muted)),
+            const SizedBox(width: 12),
+            Expanded(child: Text(v, textAlign: TextAlign.right, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color))),
+          ]),
+        );
+    Widget contact(String label, String phone) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(label, style: const TextStyle(fontSize: 12, color: CwColors.muted)),
+                const SizedBox(height: 2),
+                Text(phone, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+              ]),
+            ),
+            Semantics(
+              button: true,
+              label: 'Call ${label.split(' · ').last}',
+              excludeSemantics: true,
+              child: Material(
+                color: CwColors.lilac,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => callNumber(context, phone),
+                  child: const SizedBox(width: 44, height: 44, child: Center(child: CwIcon(CwIcons.phone, size: 18, strokeWidth: 2.2, color: CwColors.primaryDark))),
+                ),
+              ),
+            ),
+          ]),
+        );
+    Widget toggle(String label, bool value, Patient Function(bool) apply) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(children: [
+            Expanded(child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+            const SizedBox(width: 10),
+            CwSwitch(value: value, label: label, onChanged: (v) => savePatientForFamily(ref, apply(v))),
+          ]),
+        );
+
+    final medical = [
+      if (p.conditions.trim().isNotEmpty) kv('Conditions', p.conditions),
+      if (p.surgery.trim().isNotEmpty) kv('Past surgery', p.surgery),
+      if (p.allergy.trim().isNotEmpty) kv('Allergy', p.allergy, color: CwColors.pink),
+      if (p.medicines.trim().isNotEmpty) kv('Medicines', p.medicines),
+      if (p.clinics.trim().isNotEmpty) kv('Regular clinics', p.clinics),
+    ];
+    final contacts = [
+      if (p.phone.isNotEmpty) contact('Patient · $first', p.phone),
+      for (final c in p.contacts) contact('${c.role} · ${c.name}', c.phone),
+    ];
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _header(p, family, now),
+      const SizedBox(height: 18),
+      group(
+        'Contact numbers',
+        contacts.isEmpty
+            ? card([const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('No numbers saved yet.', style: TextStyle(fontSize: 13, color: CwColors.muted)))])
+            : card(contacts),
       ),
-      const Gap(16),
-      const SectionTitle('Care needs'),
-      CwCard(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          KeyValueRow('Mobility', p.mobility.label),
-          const Gap(6),
-          const Text('Extra help', style: CwText.muted),
-          const Gap(6),
-          p.extraHelp.isEmpty
-              ? const Text('None', style: CwText.bodyBold)
-              : Wrap(spacing: 6, runSpacing: 6, children: [for (final e in p.extraHelp) CwBadge(e)]),
-        ]),
-      ),
-      const Gap(16),
-      const SectionTitle('Medical history'),
-      CwCard(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          row('Conditions', p.conditions),
-          row('Past surgery', p.surgery),
-          row('Allergy', p.allergy),
-          row('Medicines', p.medicines),
-          row('Regular clinics', p.clinics),
-          const Gap(6),
-          const Text('Entered by the family. The helper does not give medical advice.', style: CwText.small),
-        ]),
+      const SizedBox(height: 18),
+      group('Care needs', card([kv('Mobility', p.mobility.label), kv('Extra help', p.extraHelp.isEmpty ? 'None' : p.extraHelp.join(', '))])),
+      const SizedBox(height: 18),
+      group(
+        'Medical history',
+        medical.isEmpty
+            ? card([const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('Nothing added yet.', style: TextStyle(fontSize: 13, color: CwColors.muted)))])
+            : card(medical),
+        note: 'Entered by the family. The helper does not give medical advice.',
       ),
       if (p.talkNotes.isNotEmpty) ...[
-        const Gap(16),
-        SectionTitle('How to talk with ${p.name.split(' ').first}'),
-        CwCard(child: Text(p.talkNotes, style: CwText.body)),
+        const SizedBox(height: 18),
+        group(
+          'How to talk with $first',
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(color: CwColors.white, borderRadius: BorderRadius.circular(14)),
+            child: Text(p.talkNotes, style: const TextStyle(fontSize: 13, height: 1.5)),
+          ),
+        ),
       ],
-      const Gap(16),
-      const SectionTitle('Privacy and updates'),
-      CwCard(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          KeyValueRow('Show profile to the assigned helper only', p.helperOnly ? 'On' : 'Off'),
-          KeyValueRow('Send visit updates', p.sendUpdates ? 'On' : 'Off'),
-          const Gap(6),
-          const Row(children: [
-            Expanded(child: Text('Link MySejahtera visit summary', style: CwText.muted)),
-            CwBadge('COMING SOON', color: CwColors.muted, background: CwColors.surface),
-          ]),
+      const SizedBox(height: 18),
+      group(
+        'Privacy and updates',
+        card([
+          toggle('Show profile to the assigned helper only', p.helperOnly, (v) => p.copyWith(helperOnly: v)),
+          toggle('Send visit updates${me == null ? '' : ' to ${me.split(' ').first}'}', p.sendUpdates, (v) => p.copyWith(sendUpdates: v)),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Row(children: [
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Link MySejahtera visit summary', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: CwColors.muted)),
+                  SizedBox(height: 2),
+                  Text('Available once MOH allows consent-based sharing', style: TextStyle(fontSize: 11, color: CwColors.muted)),
+                ]),
+              ),
+              Tag('Coming soon', background: CwColors.lilac, color: CwColors.primaryDark, padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5)),
+            ]),
+          ),
         ]),
       ),
-      const Gap(20),
-      CwButton(label: 'Edit profile', onPressed: () => setState(() => _editing = true)),
+      const SizedBox(height: 26),
+      SizedBox(
+        height: 64,
+        child: FilledButton(
+          onPressed: () => setState(() => _editing = true),
+          style: FilledButton.styleFrom(
+            backgroundColor: CwColors.white,
+            foregroundColor: CwColors.primary,
+            side: const BorderSide(color: CwColors.primary, width: 2),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            textStyle: const TextStyle(fontFamily: cwFont, fontSize: 17, fontWeight: FontWeight.w800),
+          ),
+          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+            CwIcon('<path d="M4 20h4L19 9l-4-4L4 16z"/>', size: 18, strokeWidth: 2.4, color: CwColors.primary),
+            SizedBox(width: 8),
+            Text('Edit profile'),
+          ]),
+        ),
+      ),
+      const SizedBox(height: 12),
+      NoteRow(
+        text: 'Only $first and members of the ${family?.name ?? 'family'} group can edit this profile. Helpers can view it during a visit but cannot change it.',
+      ),
     ]);
   }
 }

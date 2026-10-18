@@ -7,6 +7,7 @@ enum DeliveryStatus {
   booked('booked'),
   collecting('collecting'),
   atPharmacy('at_pharmacy'),
+  collected('collected'),
   onTheWay('on_the_way'),
   delivered('delivered'),
   notMatched('not_matched'),
@@ -24,15 +25,17 @@ const deliveryStageKeys = [
   'booked',
   'collecting',
   'at_pharmacy',
+  'collected',
   'on_the_way',
   'delivered',
 ];
 const deliveryStageLabels = {
   'booked': 'Booked',
-  'collecting': 'Collecting documents',
+  'collecting': 'Documents collected',
   'at_pharmacy': 'At the pharmacy',
-  'on_the_way': 'On the way to you',
-  'delivered': 'Delivered',
+  'collected': 'Medicine collected',
+  'on_the_way': 'On the way',
+  'delivered': 'Delivered to doorstep',
 };
 
 class MedDelivery {
@@ -53,6 +56,7 @@ class MedDelivery {
     this.date,
     this.caregiverId,
     this.caregiverName,
+    this.caregiverPhone,
     this.offerCaregiverName,
     this.offerExpiresAt,
     this.steps = const [],
@@ -77,6 +81,7 @@ class MedDelivery {
   final DeliveryStatus status;
   final String? caregiverId;
   final String? caregiverName;
+  final String? caregiverPhone;
   final String? offerCaregiverName;
   final DateTime? offerExpiresAt;
   final List<VisitStep> steps;
@@ -107,6 +112,7 @@ class MedDelivery {
       ),
       caregiverId: m['caregiverId'] as String?,
       caregiverName: m['caregiverName'] as String?,
+      caregiverPhone: m['caregiverPhone'] as String?,
       offerCaregiverName: m['offerCaregiverName'] as String?,
       offerExpiresAt: readDate(m['offerExpiresAt']),
       steps: readMaps(m['steps']).map(VisitStep.fromMap).toList(),
@@ -137,6 +143,7 @@ class MedDelivery {
     'status': status.wire,
     'caregiverId': caregiverId,
     'caregiverName': caregiverName,
+    'caregiverPhone': caregiverPhone,
     'offerCaregiverName': offerCaregiverName,
     'offerExpiresAt': writeDate(offerExpiresAt),
     'steps': [for (final s in steps) s.toMap()],
