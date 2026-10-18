@@ -4,7 +4,6 @@ import { respondToOfferLogic } from '../src/booking/respond';
 import { payBookingLogic } from '../src/booking/pay';
 import { advanceStepLogic, submitSummaryLogic } from '../src/booking/steps';
 import { requestDeliveryLogic } from '../src/delivery/request';
-import { payDeliveryLogic } from '../src/delivery/pay';
 import { progressDeliveriesLogic } from '../src/delivery/progress';
 import { seedDemoLogic } from '../src/seed';
 import { deliveryFee, routeKm } from '../src/domain/pricing';
@@ -101,6 +100,7 @@ describeEmu('medicine delivery', () => {
     pharmacyId: 'hsb',
     window: '8:00 – 10:00 AM',
     windowStart: APPT.toISOString(),
+    method: 'fpx',
     docs,
   });
 
@@ -116,16 +116,20 @@ describeEmu('medicine delivery', () => {
     const km = routeKm(3.187, 101.518, pharm.lat, pharm.lng);
     expect(d.routeKm).toBe(km);
     expect(d.fee.totalSen).toBe(deliveryFee(km).totalSen);
-    expect(d.status).toBe('pending_caregiver');
-    const offers = await db.collection('offers').where('deliveryId', '==', r.deliveryId).get();
-    expect(offers.docs[0].data().caregiverId).toBe('farid');
+    expect(d.status).toBe('booked');
+    expect(d.caregiverId).toBe('farid');
+    expect(d.payment.status).toBe('paid');
+    expect((await db.doc(`receipts/pay-del-${r.deliveryId}`).get()).data()!.amountSen).toBe(deliveryFee(km).totalSen);
   });
 
-  test('accept, pay, then stages advance one per minute', async () => {
+  test('no free helper: nothing is created or charged', async () => {
+    await db.doc('caregivers/farid').update({ onDuty: false });
+    await expect(requestDeliveryLogic(db, 'g1', delivery(), NOW)).rejects.toEqual(code('no-caregiver'));
+    expect((await db.collection('deliveries').get()).size).toBe(0);
+  });
+
+  test('pay on request, then stages advance one per minute', async () => {
     const r = await requestDeliveryLogic(db, 'g1', delivery(), NOW);
-    const offer = (await db.collection('offers').where('deliveryId', '==', r.deliveryId).get()).docs[0];
-    await respondToOfferLogic(db, 'farid', { offerId: offer.id, accept: true }, NOW);
-    await payDeliveryLogic(db, 'g1', { deliveryId: r.deliveryId, method: 'fpx' }, NOW);
     let d = (await db.doc(`deliveries/${r.deliveryId}`).get()).data()!;
     expect(d.status).toBe('booked');
     await progressDeliveriesLogic(db, new Date(NOW.getTime() + 30_000));

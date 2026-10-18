@@ -3,10 +3,11 @@ import { Firestore } from 'firebase-admin/firestore';
 import { MINUTE, toDate, ts } from '../db';
 import { notifyTx } from '../notify';
 
-export const DELIVERY_STAGES = ['booked', 'collecting', 'at_pharmacy', 'on_the_way', 'delivered'];
+export const DELIVERY_STAGES = ['booked', 'collecting', 'at_pharmacy', 'collected', 'on_the_way', 'delivered'];
 const LABEL: Record<string, string> = {
   collecting: 'collecting the documents',
   at_pharmacy: 'at the pharmacy',
+  collected: 'medicine collected',
   on_the_way: 'on the way to you',
   delivered: 'delivered',
 };

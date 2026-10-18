@@ -12,6 +12,7 @@ import { payBookingLogic } from './booking/pay';
 import { cancelBookingLogic } from './booking/cancel';
 import { lockGroupsLogic } from './booking/lock';
 import { advanceStepLogic, submitSummaryLogic } from './booking/steps';
+import { requestRideHomeLogic } from './booking/ride';
 import { requestDeliveryLogic } from './delivery/request';
 import { payDeliveryLogic } from './delivery/pay';
 import { progressDeliveriesLogic } from './delivery/progress';
@@ -39,6 +40,8 @@ export const lockGroups = onSchedule({ schedule: 'every 5 minutes', timeZone: 'A
 });
 
 export const advanceStep = onCall((req) => advanceStepLogic(db(), requireAuth(req.auth), req.data, new Date()));
+
+export const requestRideHome = onCall((req) => requestRideHomeLogic(db(), requireAuth(req.auth), req.data, new Date()));
 
 export const submitSummary = onCall((req) => submitSummaryLogic(db(), requireAuth(req.auth), req.data, new Date()));
 

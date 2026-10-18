@@ -1,18 +1,21 @@
-// requestDelivery: repeat-medicine run, fee by distance formula, then matching.
+// requestDelivery: repeat-medicine run, fee by distance formula, paid on the spot
+// (MedRun → MedBooked in the design). The best available helper is assigned at once.
 import { Firestore } from 'firebase-admin/firestore';
 import { HOUR, ts } from '../db';
 import { fail } from '../errors';
+import { notifyTx } from '../notify';
 import { deriveRequirements } from '../domain/needs';
 import { deliveryFee, routeKm } from '../domain/pricing';
 import { HOSPITALS, PICKUP_POINTS } from '../places';
 import { rankFor } from '../booking/request';
-import { offerNext } from '../booking/offers';
+import { METHOD_LABEL, PAYMENT_METHODS } from '../booking/pay';
 
 interface DeliveryInput {
   patientId: string;
   pharmacyId: string;
   window: string;
   windowStart: string;
+  method: string;
   docs: { card?: boolean; ic?: boolean; letter?: boolean };
 }
 
@@ -22,6 +25,8 @@ export async function requestDeliveryLogic(db: Firestore, uid: string, raw: unkn
     fail('bad-request', 'Some delivery details are missing.');
   }
   if (!input.docs?.card || !input.docs?.ic || !input.docs?.letter) fail('docs-missing', 'Tick all 3 documents to continue.');
+  const method = input.method ?? 'fpx';
+  if (!PAYMENT_METHODS.includes(method as never)) fail('bad-request', 'Choose a payment method.');
   const user = (await db.doc(`users/${uid}`).get()).data();
   const familyId: string | undefined = user?.familyId;
   if (!familyId) fail('no-patient', 'Set up your family first.');
@@ -42,35 +47,68 @@ export async function requestDeliveryLogic(db: Firestore, uid: string, raw: unkn
   const req = deriveRequirements({ level: 1, mobility: 'independent', patientAge: 30, addons: [], delivery: true });
   const window = { start, end: new Date(start.getTime() + 3 * HOUR) };
   const ranked = await rankFor(db, req, { apptAt: start, pickup: home, window, familyId: familyId!, patientId: input.patientId });
+  if (ranked.length === 0) fail('no-caregiver', 'No helper is free in that window. Try another time; nothing was charged.');
 
   const ref = db.collection('deliveries').doc();
-  await ref.set({
-    familyId,
-    guardianUid: uid,
-    patientId: input.patientId,
-    patientName: patient.name ?? '',
-    pharmacyId: pharmacy.id,
-    pharmacyName: pharmacy.name,
-    placeName: `Medicine run · ${pharmacy.name}`,
-    window: String(input.window ?? ''),
-    date: ts(start),
-    apptAt: ts(start),
-    deliverTo: home.label,
-    routeKm: km,
-    fee,
-    estimateSen: fee.totalSen,
-    needs: ['Collect medicine', 'Signature on handover'],
-    level: 1,
-    status: 'pending_caregiver',
-    offerKind: 'delivery',
-    rankedUids: ranked,
-    offeredUids: [],
-    currentOfferId: null,
-    windowStart: ts(window.start),
-    windowEnd: ts(window.end),
-    steps: [],
-    createdAt: ts(now),
+  await db.runTransaction(async (tx) => {
+    // First helper in the ranking who is still on duty.
+    let cgUid: string | null = null;
+    let cg: FirebaseFirestore.DocumentData | undefined;
+    for (const id of ranked) {
+      const data = (await tx.get(db.doc(`caregivers/${id}`))).data();
+      if (data?.onDuty) {
+        cgUid = id;
+        cg = data;
+        break;
+      }
+    }
+    if (!cgUid || !cg) fail('no-caregiver', 'No helper is free in that window. Try another time; nothing was charged.');
+
+    tx.set(ref, {
+      familyId,
+      guardianUid: uid,
+      patientId: input.patientId,
+      patientName: patient.name ?? '',
+      pharmacyId: pharmacy.id,
+      pharmacyName: pharmacy.name,
+      placeName: `Medicine run · ${pharmacy.name}`,
+      window: String(input.window ?? ''),
+      date: ts(start),
+      apptAt: ts(start),
+      deliverTo: home.label,
+      routeKm: km,
+      fee,
+      estimateSen: fee.totalSen,
+      needs: ['Collect medicine', 'Signature on handover'],
+      level: 1,
+      status: 'booked',
+      caregiverId: cgUid,
+      caregiverName: cg.displayName ?? cgUid,
+      caregiverPhone: cg.phone ?? '',
+      acceptedAt: ts(now),
+      windowStart: ts(window.start),
+      windowEnd: ts(window.end),
+      payment: { method, status: 'paid', paidAt: ts(now) },
+      steps: [{ key: 'booked', at: ts(now) }],
+      createdAt: ts(now),
+    });
+    tx.set(db.doc(`receipts/pay-del-${ref.id}`), {
+      uid,
+      familyId,
+      bookingId: null,
+      deliveryId: ref.id,
+      amountSen: fee.totalSen,
+      kind: 'payment',
+      label: `Medicine delivery · ${patient.name ?? ''}`,
+      method: METHOD_LABEL[method],
+      createdAt: ts(now),
+    });
+    notifyTx(tx, db, cgUid, {
+      type: 'confirmed',
+      title: 'New medicine run',
+      body: `Collect documents from ${home.label} · ${input.window ?? ''}.`,
+      link: '/cg/schedule',
+    }, now);
   });
-  await offerNext(db, 'deliveries', ref.id, now, null);
-  return { deliveryId: ref.id, status: (await ref.get()).data()!.status };
+  return { deliveryId: ref.id, status: 'booked' };
 }

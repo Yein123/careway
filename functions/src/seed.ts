@@ -23,18 +23,22 @@ const CAREGIVERS = [
   {
     email: 'farid@careway.demo', name: 'Farid A.', agency: 'CareWay helpers', rating: 4.9, phone: '012-778 4410',
     languages: ['Malay', 'English'], skills: ['wheelchair', 'medicineCollection'], certs: ['firstAid'],
+    vehicle: { model: 'White Toyota Hiace', plate: 'WXY 2841', driver: 'Kumar' },
   },
   {
     email: 'nurul@careway.demo', name: 'Nurul H.', agency: 'Partner agency · trained caregiver', rating: 4.9, phone: '011-2345 8870',
     languages: ['Malay', 'English'], skills: ['wheelchair', 'transfer', 'consultSitIn', 'dementia'], certs: ['firstAid', 'patientHandling', 'trainedEscort'],
+    vehicle: { model: 'Silver Perodua Alza', plate: 'VDK 5532', driver: '' },
   },
   {
     email: 'meiling@careway.demo', name: 'Mei Ling T.', agency: 'Partner agency · paediatric', rating: 4.8, phone: '016-330 2291',
     languages: ['Mandarin', 'Cantonese', 'English'], skills: ['paediatric', 'consultSitIn', 'wheelchair', 'medicineCollection'], certs: ['firstAid', 'paediatric', 'trainedEscort'],
+    vehicle: { model: 'Blue Proton Exora', plate: 'BLM 7120', driver: '' },
   },
   {
     email: 'ravi@careway.demo', name: 'Ravi S.', agency: 'CareWay helpers', rating: 4.9, phone: '017-551 0923',
     languages: ['Tamil', 'English', 'Malay'], skills: ['wheelchair', 'medicineCollection'], certs: ['firstAid'],
+    vehicle: { model: 'White Nissan Urvan', plate: 'WTA 6195', driver: 'Kumar' },
   },
 ];
 
@@ -99,7 +103,7 @@ export async function seedDemoLogic(db: Firestore, auth: Auth, now: Date): Promi
     await db.doc(`caregivers/${uid}`).set({
       displayName: c.name, agency: c.agency, zone: 'Elmina', phone: c.phone,
       onDuty: prev?.onDuty ?? true, rating: c.rating, ratingCount: prev?.ratingCount ?? 120,
-      languages: c.languages, skills: c.skills, certificates: c.certs.map(cert), home: ELMINA_HOME,
+      languages: c.languages, skills: c.skills, certificates: c.certs.map(cert), home: ELMINA_HOME, vehicle: c.vehicle,
     });
   }
 
