@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -63,7 +65,56 @@ class _Body extends ConsumerStatefulWidget {
 }
 
 class _BodyState extends ConsumerState<_Body> {
+  /// One-to-one escort: after this wait the offered caregiver's acceptance is made for them.
+  static const _autoAcceptAfter = Duration(seconds: 10);
+
   bool _cancelling = false;
+  Timer? _autoAccept;
+  String? _autoAcceptFor;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleAutoAccept();
+  }
+
+  @override
+  void didUpdateWidget(covariant _Body old) {
+    super.didUpdateWidget(old);
+    _scheduleAutoAccept();
+  }
+
+  @override
+  void dispose() {
+    _autoAccept?.cancel();
+    super.dispose();
+  }
+
+  /// Arms one timer per offer while a Level 2 request waits for its caregiver.
+  void _scheduleAutoAccept() {
+    final b = widget.b;
+    final offer = b.status == BookingStatus.pendingCaregiver && b.level == 2 ? b.offerCaregiverName : null;
+    final key = offer == null ? null : '${b.id}:${b.offerExpiresAt}';
+    if (key == _autoAcceptFor) return;
+    _autoAccept?.cancel();
+    _autoAcceptFor = key;
+    if (key == null) return;
+    _autoAccept = Timer(_autoAcceptAfter, () => _tryAutoAccept(b.id, key, 3));
+  }
+
+  Future<void> _tryAutoAccept(String bookingId, String key, int triesLeft) async {
+    if (!mounted || _cancelling || _autoAcceptFor != key) return;
+    try {
+      await ref.read(careWayApiProvider).autoAcceptBooking(bookingId);
+    } on CareWayException catch (e) {
+      // The server clock may be a little behind; anything else means it was answered or cancelled.
+      if (e.code == 'too-soon' && triesLeft > 1 && mounted && _autoAcceptFor == key) {
+        _autoAccept = Timer(const Duration(seconds: 2), () => _tryAutoAccept(bookingId, key, triesLeft - 1));
+      }
+    } catch (_) {
+      // The live status moves the screen on.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

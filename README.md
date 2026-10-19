@@ -47,7 +47,7 @@ On the sign-in screen (debug builds) tap **Load demo data**, then sign in (passw
 | Guardian | parent@gmail.com | Siti, books for her child Adam |
 | Guardian | user@gmail.com | Aisyah, books for her mother Zainab |
 | Guardian (self) | self@gmail.com | Hafiz, books for himself |
-| Caregiver | caregiver@gmail.com | Ravi |
+| Caregiver | caregiver@gmail.com | Aina |
 | Extra caregivers | farid@careway.demo, nurul@careway.demo, meiling@careway.demo | group helpers and escorts |
 
 Note: the Functions emulator does not run scheduled jobs (offer expiry, group lock, delivery progress) on its own.

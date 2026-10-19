@@ -51,7 +51,16 @@ export async function cancelBookingLogic(
       'price.refundSen': (b.price?.refundSen ?? 0) + refundSen,
       'price.creditSen': (b.price?.creditSen ?? 0) + creditSen,
     });
-    if (offerRef && offer?.status === 'offered') tx.update(offerRef, { status: 'cancelled' });
+    if (offerRef && offer?.status === 'offered') {
+      tx.update(offerRef, { status: 'cancelled' });
+      // Rewrite the caregiver's job request so it no longer asks for an answer.
+      notifyTx(tx, db, offer.caregiverId, {
+        type: 'cancelled',
+        title: 'Request cancelled',
+        body: `${b.patientSnapshot?.name ?? 'The patient'}'s family cancelled this request. Nothing to do.`,
+        link: '/cg',
+      }, now, offerRef.id);
+    }
 
     let freedGroup: string | null = null;
     if (groupRef && group) {

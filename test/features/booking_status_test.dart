@@ -43,6 +43,30 @@ void main() {
     expect(locationOf(c), '/booking/b1/package');
   });
 
+  testWidgets('one-to-one escort is accepted for the caregiver after 10 seconds', (tester) async {
+    final api = FakeApi();
+    final b = booking(
+      status: BookingStatus.pendingCaregiver,
+      level: 2,
+      caregiverName: null,
+      offerCaregiverName: 'Nurul H.',
+      offerExpiresAt: now.add(const Duration(minutes: 18)),
+    );
+    await pumpApp(tester, _fakes(b), at: '/booking/b1/pending', now: now, api: api);
+    await tester.pump(const Duration(seconds: 9));
+    expect(api.argsOf('autoAcceptBooking'), isEmpty);
+    await tester.pump(const Duration(seconds: 1));
+    expect(api.argsOf('autoAcceptBooking'), ['b1']);
+  });
+
+  testWidgets('group requests are not accepted automatically', (tester) async {
+    final api = FakeApi();
+    final b = booking(status: BookingStatus.pendingCaregiver, caregiverName: null, offerCaregiverName: 'Farid A.', offerExpiresAt: now.add(const Duration(minutes: 18)));
+    await pumpApp(tester, _fakes(b), at: '/booking/b1/pending', now: now, api: api);
+    await tester.pump(const Duration(seconds: 15));
+    expect(api.argsOf('autoAcceptBooking'), isEmpty);
+  });
+
   testWidgets('pending moves to not found when no caregiver', (tester) async {
     final fakes = _fakes(booking(status: BookingStatus.pendingCaregiver, caregiverName: null));
     final c = await pumpApp(tester, fakes, at: '/booking/b1/pending', now: now);

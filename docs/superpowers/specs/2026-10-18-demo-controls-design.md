@@ -16,7 +16,7 @@ All passwords are `careway123`.
 | 1a | Guardian books for their child | `parent@gmail.com` | Siti (parent) | Adam, 9, Child |
 | 1b | Guardian books for their parent | `user@gmail.com` | Aisyah (adult child) | Zainab, 72, Parent |
 | 2 | Individual books for themselves | `self@gmail.com` | Hafiz, 58 | Himself, Myself |
-| 3 | Caregiver updates a visit | `caregiver@gmail.com` | Ravi S. | A ready visit for Zainab today |
+| 3 | Caregiver updates a visit | `caregiver@gmail.com` | Aina S. | A ready visit for Zainab today |
 
 The existing `farid@`, `nurul@` and `meiling@careway.demo` caregivers stay, so **Reject** has someone to cascade to. The old `aisyah@` and `ravi@careway.demo` accounts are replaced by the table above.
 

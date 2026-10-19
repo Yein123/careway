@@ -1,5 +1,6 @@
 import 'package:careway/data/api.dart';
 import 'package:careway/data/models/caregiver.dart';
+import 'package:careway/data/models/notification.dart';
 import 'package:careway/data/models/offer.dart';
 import 'package:careway/data/models/user.dart';
 import 'package:careway/domain/booking_status.dart';
@@ -65,6 +66,20 @@ void main() {
     await tester.tap(_filled('Accept'));
     await tester.pumpAndSettle();
     expect(api.argsOf('respondToOffer').single, {'offerId': 'o1', 'accept': true});
+  });
+
+  testWidgets('job request notification offers Accept and Decline while the offer is open', (tester) async {
+    final api = FakeApi();
+    final note = AppNotification(id: 'o1', type: 'job-request', title: 'New job request', body: 'Adam bin Imran', link: '/cg', createdAt: now);
+    final fakes = Fakes(uid: 'cg1', users: [cgUser], caregivers: [profile()], offers: [offer()], notifications: [note]);
+    await pumpApp(tester, fakes, at: '/cg/notifications', now: now, api: api);
+    await tester.tap(_filled('Accept'));
+    await tester.pumpAndSettle();
+    expect(api.argsOf('respondToOffer').single, {'offerId': 'o1', 'accept': true});
+
+    fakes.offer.offers.set([]);
+    await tester.pumpAndSettle();
+    expect(_filled('Accept'), findsNothing, reason: 'cancelled offers drop their actions');
   });
 
   testWidgets('expired offer is removed with a message', (tester) async {

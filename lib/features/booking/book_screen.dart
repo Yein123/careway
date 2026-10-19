@@ -30,6 +30,12 @@ class BookScreen extends ConsumerStatefulWidget {
 }
 
 class _BookScreenState extends ConsumerState<BookScreen> {
+  final _form = GlobalKey<PatientFormState>();
+  bool _formValid = false;
+  bool _saving = false;
+
+  /// The patient just saved from the form, read by Next.
+  Patient? _savedPatient;
   bool _addingNew = false;
   bool _calOpen = true;
   bool _timeOpen = false;
@@ -72,14 +78,28 @@ class _BookScreenState extends ConsumerState<BookScreen> {
       for (final p in pickupPoints) PlaceRef(label: p.name, lat: p.lat, lng: p.lng),
     ];
 
-    void next() {
+    Future<void> next() async {
+      var nextLevel = level;
+      if (showForm) {
+        // A new patient is saved first (and kept in the family list if ticked).
+        _savedPatient = null;
+        setState(() => _saving = true);
+        final ok = await _form.currentState?.submit() ?? false;
+        if (!context.mounted) return;
+        setState(() => _saving = false);
+        final saved = _savedPatient;
+        if (!ok || saved == null) return;
+        if (service && !level1Allowed(saved.mobility, saved.age)) nextLevel = 2;
+      }
       if (!service) {
         context.push('/book/help');
         return;
       }
-      _set((d) => d.copyWith(level: level));
-      context.push(level == 2 ? '/book/escort' : '/book/groups');
+      _set((d) => d.copyWith(level: nextLevel));
+      context.push(nextLevel == 2 ? '/book/escort' : '/book/groups');
     }
+
+    final canNext = showForm ? _formValid && draft.placeAndTimeComplete && !_saving : draft.detailsComplete;
 
     return DesignScaffold(
       gap: 20,
@@ -170,12 +190,20 @@ class _BookScreenState extends ConsumerState<BookScreen> {
                   const Text('Patient details', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 12),
                   PatientForm(
+                    key: _form,
                     saveTick: true,
-                    saveLabel: 'Use these details',
+                    saveLabel: null,
+                    onValidChanged: (v) => setState(() => _formValid = v),
                     onSave: (p) async {
                       final id = await savePatientForFamily(ref, p);
+                      _savedPatient = p;
                       _set((d) => d.copyWith(patientId: id));
-                      if (mounted) setState(() => _addingNew = false);
+                      if (mounted) {
+                        setState(() {
+                          _addingNew = false;
+                          _formValid = false;
+                        });
+                      }
                     },
                   ),
                 ]),
@@ -322,7 +350,8 @@ class _BookScreenState extends ConsumerState<BookScreen> {
           label: service ? (level == 2 ? 'Next: review escort' : 'Next: review visit') : 'Next: choose help',
           trailingIcon: CwIcons.arrowRight,
           height: 58,
-          onPressed: draft.detailsComplete ? next : null,
+          loading: _saving,
+          onPressed: canNext ? next : null,
         ),
       ],
     );

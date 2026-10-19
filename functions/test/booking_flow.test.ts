@@ -3,7 +3,7 @@ import { requestBookingLogic, RequestInput, groupLockAt } from '../src/booking/r
 import { cancelBookingLogic } from '../src/booking/cancel';
 import { cancelOutcome } from '../src/domain/pricing';
 import { toDate } from '../src/db';
-import { respondToOfferLogic } from '../src/booking/respond';
+import { AUTO_ACCEPT_MS, autoAcceptBookingLogic, respondToOfferLogic } from '../src/booking/respond';
 import { expireOffersLogic } from '../src/booking/expire';
 import {
   APPT, bookingOf, clearDb, describeEmu, ELMINA, HOUR, MIN, NOW, offersFor, seedCaregiver, seedFamily, seedGroup, testDb,
@@ -42,6 +42,33 @@ describeEmu('booking request and offers', () => {
     const b = await bookingOf(db, r.bookingId);
     expect(b.offerCaregiverName).toBe('Nurul');
     expect(b.patientSnapshot.name).toBe('Zainab binti Ahmad');
+  });
+
+  test('job request notification is keyed by the offer and rewritten when the family cancels', async () => {
+    const r = await requestBookingLogic(db, 'g1', personal(), NOW);
+    const [offer] = await offersFor(db, r.bookingId);
+    const note = db.doc(`users/nurul/notifications/${offer.id}`);
+    expect((await note.get()).data()!.type).toBe('job-request');
+    await cancelBookingLogic(db, 'g1', { bookingId: r.bookingId }, NOW);
+    expect((await note.get()).data()).toEqual(expect.objectContaining({ type: 'cancelled', title: 'Request cancelled', read: false }));
+    const [after] = await offersFor(db, r.bookingId);
+    expect(after.status).toBe('cancelled');
+  });
+
+  test('one-to-one escort is accepted for the offered caregiver after the wait', async () => {
+    const r = await requestBookingLogic(db, 'g1', personal(), NOW);
+    await expect(autoAcceptBookingLogic(db, 'g1', { bookingId: r.bookingId }, new Date(NOW.getTime() + 2000))).rejects.toEqual(code('too-soon'));
+    await expect(
+      autoAcceptBookingLogic(db, 'g2', { bookingId: r.bookingId }, new Date(NOW.getTime() + AUTO_ACCEPT_MS)),
+    ).rejects.toEqual(expect.objectContaining({ code: 'permission-denied' }));
+    await db.doc('caregivers/nurul').update({ onDuty: false });
+    const res = await autoAcceptBookingLogic(db, 'g1', { bookingId: r.bookingId }, new Date(NOW.getTime() + AUTO_ACCEPT_MS));
+    expect(res.status).toBe('accepted');
+    const b = await bookingOf(db, r.bookingId);
+    expect(b.status).toBe('awaiting_payment');
+    expect(b.caregiverId).toBe('nurul');
+    const [offer] = await offersFor(db, r.bookingId);
+    expect((await db.doc(`users/nurul/notifications/${offer.id}`).get()).data()!.title).toBe('Job accepted for you');
   });
 
   test('decline cascades, then not_matched when list exhausted', async () => {

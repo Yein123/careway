@@ -31,22 +31,28 @@ class PatientForm extends StatefulWidget {
     required this.onSave,
     this.onCancel,
     this.saveTick = false,
+    this.onValidChanged,
   });
 
   final Patient? initial;
   final bool full;
-  final String saveLabel;
+
+  /// Null hides the save button; the parent saves through [PatientFormState.submit].
+  final String? saveLabel;
   final Future<void> Function(Patient) onSave;
   final VoidCallback? onCancel;
 
   /// Book step 1: show the "Save to my family list" tick (on by default).
   final bool saveTick;
 
+  /// Called when the form becomes valid or invalid.
+  final ValueChanged<bool>? onValidChanged;
+
   @override
-  State<PatientForm> createState() => _PatientFormState();
+  State<PatientForm> createState() => PatientFormState();
 }
 
-class _PatientFormState extends State<PatientForm> {
+class PatientFormState extends State<PatientForm> {
   late final _name = TextEditingController(text: widget.initial?.name);
   late final _age = TextEditingController(text: widget.initial == null ? '' : '${widget.initial!.age}');
   late final _phone = TextEditingController(text: widget.initial?.phone);
@@ -79,8 +85,15 @@ class _PatientFormState extends State<PatientForm> {
   }
 
   bool get _valid => _name.text.trim().isNotEmpty && _ageValue != null;
+  bool _lastValid = false;
 
-  Future<void> _save() async {
+  /// Saves the form; true when [PatientForm.onSave] succeeded.
+  Future<bool> submit() async {
+    if (!_valid || _busy) return false;
+    return _save();
+  }
+
+  Future<bool> _save() async {
     setState(() {
       _busy = true;
       _error = null;
@@ -105,8 +118,10 @@ class _PatientFormState extends State<PatientForm> {
     );
     try {
       await widget.onSave(p);
+      return true;
     } catch (_) {
       if (mounted) setState(() => _error = "Couldn't save. Check your connection and try again.");
+      return false;
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -114,7 +129,13 @@ class _PatientFormState extends State<PatientForm> {
 
   @override
   Widget build(BuildContext context) {
-    void changed(String _) => setState(() {});
+    void changed(String _) {
+      setState(() {});
+      if (_valid != _lastValid) {
+        _lastValid = _valid;
+        widget.onValidChanged?.call(_valid);
+      }
+    }
     Widget gap([double h = 14]) => SizedBox(height: h);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -222,9 +243,9 @@ class _PatientFormState extends State<PatientForm> {
               ),
             ),
           ),
-          gap(12),
+          if (widget.saveLabel != null) gap(12),
         ],
-        CwButton(label: widget.saveLabel, loading: _busy, onPressed: _valid ? _save : null),
+        if (widget.saveLabel != null) CwButton(label: widget.saveLabel!, loading: _busy, onPressed: _valid ? _save : null),
         if (widget.onCancel != null) ...[
           gap(8),
           CwButton(label: 'Cancel', kind: CwButtonKind.text, onPressed: widget.onCancel),

@@ -62,8 +62,10 @@ class BookingDraft {
   /// Local trip date as stored on groups ('yyyy-MM-dd').
   String? get dateKey => date == null ? null : DateFormat('yyyy-MM-dd').format(date!);
 
-  bool get detailsComplete =>
-      patientId != null && pickup != null && hospitalId != null && clinic != null && apptAt != null;
+  /// Everything on step 1 except who is going.
+  bool get placeAndTimeComplete => pickup != null && hospitalId != null && clinic != null && apptAt != null;
+
+  bool get detailsComplete => patientId != null && placeAndTimeComplete;
 
   BookingDraft copyWith({
     String? patientId,

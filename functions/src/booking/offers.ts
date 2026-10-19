@@ -82,7 +82,7 @@ export async function offerNext(db: Firestore, col: TargetCol, id: string, now: 
         title: 'New job request',
         body: `${t.patientSnapshot?.name ?? t.patientName ?? 'A patient'} · ${t.placeName ?? ''}. Answer within 18 minutes.`,
         link: '/cg',
-      }, now);
+      }, now, offerRef.id);
       return;
     }
 

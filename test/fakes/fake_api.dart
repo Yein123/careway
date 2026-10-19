@@ -37,6 +37,13 @@ class FakeApi implements CareWayApi {
   }
 
   @override
+  Future<String> autoAcceptBooking(String bookingId) async {
+    calls.add(('autoAcceptBooking', bookingId));
+    if (nextError != null) _throw();
+    return 'accepted';
+  }
+
+  @override
   Future<int> payBooking(Map<String, dynamic> input) async {
     calls.add(('payBooking', input));
     if (payGate != null) await payGate!.future;

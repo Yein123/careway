@@ -55,21 +55,49 @@ Future<void> _go(WidgetTester tester, ProviderContainer c, String path) async {
 void main() {
   testWidgets('book requires patient', (tester) async {
     final fakes = guardianFakes(patients: []);
-    final c = await pumpApp(tester, fakes, at: '/book', now: now);
+    await pumpApp(tester, fakes, at: '/book', now: now);
     expect(find.text('Save to my family list'), findsOneWidget);
+    expect(_filled('Use these details'), findsNothing);
 
     await tester.enterText(find.byKey(const ValueKey('pf-name')), 'Zainab binti Ahmad');
     await tester.enterText(find.byKey(const ValueKey('pf-age')), '72');
     await tester.pump();
-    await scrollTo(tester, _filled('Use these details'));
-    await tester.tap(_filled('Use these details'));
-    await tester.pumpAndSettle();
-    expect(c.read(bookingDraftProvider).patientId, isNotNull);
-    expect(fakes.family.saved.single.name, 'Zainab binti Ahmad');
-    expect(fakes.family.saved.single.inFamilyList, isTrue);
     await scrollTo(tester, _filled('Next: choose help'));
     expect(tester.widget<FilledButton>(_filled('Next: choose help')).onPressed, isNull, reason: 'place and time still missing');
+    expect(fakes.family.saved, isEmpty);
   });
+
+  /// Fills place and time on step 1 without choosing a patient.
+  void fillPlaceAndTime(ProviderContainer c) => c.read(bookingDraftProvider.notifier).update((d) => d.copyWith(
+        pickup: const PlaceRef(label: 'Home · 12, Jalan Elmina Lakeside', lat: 3.1885, lng: 101.5165),
+        hospitalId: 'hsb',
+        clinic: 'Orthopaedic specialist clinic',
+        date: DateTime(apptLocal.year, apptLocal.month, apptLocal.day),
+        minutes: apptLocal.hour * 60 + apptLocal.minute,
+      ));
+
+  for (final keep in [true, false]) {
+    testWidgets('Next: choose help saves the new patient (family list ${keep ? 'ticked' : 'unticked'})', (tester) async {
+      final fakes = guardianFakes(patients: []);
+      final c = await pumpApp(tester, fakes, at: '/book', now: now);
+      // Untick before typing: a focused field scrolls itself back into view.
+      if (!keep) {
+        await scrollTo(tester, find.text('Save to my family list'));
+        await tester.tap(find.text('Save to my family list'));
+      }
+      await tester.enterText(find.byKey(const ValueKey('pf-name')), 'Zainab binti Ahmad');
+      await tester.enterText(find.byKey(const ValueKey('pf-age')), '72');
+      fillPlaceAndTime(c);
+      await tester.pumpAndSettle();
+      await scrollTo(tester, _filled('Next: choose help'));
+      await tester.tap(_filled('Next: choose help'));
+      await tester.pumpAndSettle();
+      expect(fakes.family.saved.single.name, 'Zainab binti Ahmad');
+      expect(fakes.family.saved.single.inFamilyList, keep);
+      expect(c.read(bookingDraftProvider).patientId, isNotNull);
+      expect(find.text('Choose help'), findsOneWidget);
+    });
+  }
 
   testWidgets('today is bookable and a past day is disabled', (tester) async {
     final morning = DateTime(2026, 10, 17, 10);

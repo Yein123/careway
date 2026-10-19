@@ -6,7 +6,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { db } from './db';
 import { requireAdmin, requireAuth } from './errors';
 import { requestBookingLogic } from './booking/request';
-import { respondToOfferLogic } from './booking/respond';
+import { autoAcceptBookingLogic, respondToOfferLogic } from './booking/respond';
 import { expireOffersLogic } from './booking/expire';
 import { payBookingLogic } from './booking/pay';
 import { cancelBookingLogic } from './booking/cancel';
@@ -34,6 +34,8 @@ export { ping } from './ping';
 export const requestBooking = onCall((req) => requestBookingLogic(db(), requireAuth(req.auth), req.data, new Date()));
 
 export const respondToOffer = onCall((req) => respondToOfferLogic(db(), requireAuth(req.auth), req.data, new Date()));
+
+export const autoAcceptBooking = onCall((req) => autoAcceptBookingLogic(db(), requireAuth(req.auth), req.data, new Date()));
 
 export const expireOffers = onSchedule({ schedule: 'every 1 minutes', timeZone: 'Asia/Kuala_Lumpur' }, async () => {
   await expireOffersLogic(db(), new Date());

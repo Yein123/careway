@@ -6,9 +6,12 @@ import '../../core/format.dart';
 import '../../core/icons.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/async_view.dart';
+import '../../core/widgets/cw_button.dart';
 import '../../core/widgets/design_kit.dart';
+import '../../data/api.dart';
 import '../../data/models/notification.dart';
 import '../../data/providers.dart';
+import '../caregiver/cg_providers.dart';
 
 enum _Kind { ride, visit, delivery }
 
@@ -200,6 +203,8 @@ class _Card extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(n.body, style: const TextStyle(fontSize: 12, height: 1.45, color: CwColors.muted)),
                   ],
+                  // Job requests are keyed by their offer id.
+                  if (n.type == 'job-request') _OfferActions(offerId: n.id),
                 ]),
               ),
               const SizedBox(width: 12),
@@ -213,6 +218,47 @@ class _Card extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Accept / Decline on a caregiver's job request while its offer is still open.
+class _OfferActions extends ConsumerStatefulWidget {
+  const _OfferActions({required this.offerId});
+  final String offerId;
+
+  @override
+  ConsumerState<_OfferActions> createState() => _OfferActionsState();
+}
+
+class _OfferActionsState extends ConsumerState<_OfferActions> {
+  bool _busy = false;
+
+  Future<void> _respond(bool accept) async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _busy = true);
+    try {
+      await ref.read(careWayApiProvider).respondToOffer(widget.offerId, accept);
+      messenger.showSnackBar(SnackBar(content: Text(accept ? 'Added to your schedule. The family pays next.' : 'Request declined.')));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(friendlyError(e))));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = ref.watch(clockProvider)();
+    final open = (ref.watch(cgOffersProvider).value ?? const []).any((o) => o.id == widget.offerId && o.expiresAt.isAfter(now));
+    if (!open) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(children: [
+        Expanded(child: CwButton(label: 'Decline', kind: CwButtonKind.secondary, onPressed: _busy ? null : () => _respond(false))),
+        const SizedBox(width: 8),
+        Expanded(child: CwButton(label: 'Accept', loading: _busy, onPressed: _busy ? null : () => _respond(true))),
+      ]),
     );
   }
 }

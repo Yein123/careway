@@ -18,18 +18,18 @@ export const DEMO_ACCOUNTS: Record<DemoRole, { email: string; name: string }> = 
   parent: { email: 'parent@gmail.com', name: 'Siti binti Yusof' },
   user: { email: 'user@gmail.com', name: 'Aisyah binti Hassan' },
   self: { email: 'self@gmail.com', name: 'Hafiz bin Osman' },
-  caregiver: { email: 'caregiver@gmail.com', name: 'Ravi S.' },
+  caregiver: { email: 'caregiver@gmail.com', name: 'Aina S.' },
 };
 export const DEMO_FAMILY_IDS = ['demo-parent-family', 'demo-user-family', 'demo-self-family'];
 export const S3_BOOKING_ID = 'demo-s3-visit';
 export type SeedResult = { uids: Record<string, string>; groups: number; s3BookingId: string };
 
 async function ensureUser(auth: Auth, email: string, displayName: string): Promise<string> {
-  try {
-    return (await auth.getUserByEmail(email)).uid;
-  } catch {
-    return (await auth.createUser({ email, password: DEMO_PASSWORD, displayName })).uid;
-  }
+  const existing = await auth.getUserByEmail(email).catch(() => null);
+  if (!existing) return (await auth.createUser({ email, password: DEMO_PASSWORD, displayName })).uid;
+  // Keep renamed demo accounts in step with the seed.
+  if (existing.displayName !== displayName) await auth.updateUser(existing.uid, { displayName });
+  return existing.uid;
 }
 
 const cert = (type: string) => ({ type, verified: true, expiresAt: ts(CERT_EXPIRY) });
@@ -51,7 +51,7 @@ const CAREGIVERS = [
     vehicle: { model: 'Blue Proton Exora', plate: 'BLM 7120', driver: '' },
   },
   {
-    email: DEMO_ACCOUNTS.caregiver.email, name: 'Ravi S.', agency: 'CareWay helpers', rating: 4.9, phone: '017-551 0923',
+    email: DEMO_ACCOUNTS.caregiver.email, name: 'Aina S.', agency: 'CareWay helpers', rating: 4.9, phone: '017-551 0923',
     languages: ['Tamil', 'English', 'Malay'], skills: ['wheelchair', 'transfer', 'consultSitIn', 'medicineCollection'],
     certs: ['firstAid', 'patientHandling', 'trainedEscort'],
     vehicle: { model: 'White Nissan Urvan', plate: 'WTA 6195', driver: 'Kumar' },

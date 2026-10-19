@@ -55,6 +55,9 @@ abstract class CareWayApi {
   Future<BookingRequestResult> requestBooking(Map<String, dynamic> input);
   Future<String> respondToOffer(String offerId, bool accept);
 
+  /// One-to-one escort: accepts the open offer for the caregiver once it has waited long enough.
+  Future<String> autoAcceptBooking(String bookingId);
+
   /// Returns the amount paid in sen.
   Future<int> payBooking(Map<String, dynamic> input);
   Future<CancelResult> cancelBooking(String bookingId);
@@ -116,6 +119,10 @@ class FunctionsCareWayApi implements CareWayApi {
             'accept': accept,
           }))['status']
           as String;
+
+  @override
+  Future<String> autoAcceptBooking(String bookingId) async =>
+      (await _call('autoAcceptBooking', {'bookingId': bookingId}))['status'] as String;
 
   @override
   Future<int> payBooking(Map<String, dynamic> input) async =>
