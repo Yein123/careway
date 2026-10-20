@@ -24,6 +24,7 @@ import {
   adminNotFoundLogic,
   adminResetLogic,
   adminRespondOfferLogic,
+  adminSubmitSummaryLogic,
 } from './admin/admin';
 
 initializeApp();
@@ -85,4 +86,5 @@ export const adminNotFound = adminCall((d, now) => adminNotFoundLogic(db(), d, n
 export const adminLockGroup = adminCall((d, now) => adminLockGroupLogic(db(), d, now));
 export const adminAdvanceDelivery = adminCall((d, now) => adminAdvanceDeliveryLogic(db(), d, now));
 export const adminAdvanceStep = adminCall((d, now) => adminAdvanceStepLogic(db(), d, now));
+export const adminSubmitSummary = adminCall((d, now) => adminSubmitSummaryLogic(db(), d, now));
 export { claimPushToken, releasePushToken, onNotificationCreated } from './push';

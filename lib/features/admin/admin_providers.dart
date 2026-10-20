@@ -4,9 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/booking.dart';
 import '../../data/models/delivery.dart';
 
-/// Id of the scenario-3 booking the admin drives step by step.
-const demoS3BookingId = 'demo-s3-visit';
-
 const _bookingStatuses = [
   'pending_caregiver',
   'awaiting_payment',
@@ -27,7 +24,9 @@ const _deliveryStatuses = [
 abstract class AdminRepo {
   Stream<List<Booking>> watchBookings();
   Stream<List<MedDelivery>> watchDeliveries();
-  Stream<Booking?> watchS3();
+
+  /// Bookings with the appointment today (local time), earliest first.
+  Stream<List<Booking>> watchTodayVisits();
 }
 
 class FirestoreAdminRepo implements AdminRepo {
@@ -55,10 +54,18 @@ class FirestoreAdminRepo implements AdminRepo {
       );
 
   @override
-  Stream<Booking?> watchS3() => _db
-      .doc('bookings/$demoS3BookingId')
-      .snapshots()
-      .map((s) => s.exists ? Booking.fromMap(s.id, s.data()!) : null);
+  Stream<List<Booking>> watchTodayVisits() {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+    final end = start.add(const Duration(days: 1));
+    return _db
+        .collection('bookings')
+        .where('apptAt', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('apptAt', isLessThan: Timestamp.fromDate(end))
+        .orderBy('apptAt')
+        .snapshots()
+        .map((q) => [for (final d in q.docs) Booking.fromMap(d.id, d.data())]);
+  }
 }
 
 final adminRepoProvider = Provider<AdminRepo>(
@@ -73,6 +80,6 @@ final adminDeliveriesProvider = StreamProvider<List<MedDelivery>>(
   (ref) => ref.watch(adminRepoProvider).watchDeliveries(),
 );
 
-final adminS3Provider = StreamProvider<Booking?>(
-  (ref) => ref.watch(adminRepoProvider).watchS3(),
+final adminTodayVisitsProvider = StreamProvider<List<Booking>>(
+  (ref) => ref.watch(adminRepoProvider).watchTodayVisits(),
 );

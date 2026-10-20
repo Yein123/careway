@@ -67,7 +67,7 @@ Run sheet:
 
 1. **S1, guardian (user@gmail.com, phone):** book today's group. On the admin page press **Accept**, **Reject**, **Not found** or **Group set**; each result arrives as a push on the phone. For a medicine delivery, press **Next stage**: pushes arrive at collecting and delivered only.
 2. **S2, self booking (self@gmail.com):** same flow as S1.
-3. **S3, caregiver:** sign in as caregiver@gmail.com on the phone, open today's visit and tap through the steps, while the guardian view runs in a laptop browser as user@gmail.com. On the admin page, **Advance step** stops before the last Level 2 step: the visit summary must be written on the caregiver phone first, then finish the visit there.
+3. **S3, caregiver:** sign in as caregiver@gmail.com on the phone, open today's visit and tap through the steps, while the guardian view runs in a laptop browser as user@gmail.com. Or drive it from the admin page: **Today's caregiver visits** lists every caregiver-assigned visit with today's appointment. **Mark done: <step>** posts the next update as the caregiver, and once the doctor step is done **Write visit summary** sends the summary to the family. A Level 2 visit (or one with the Visit summary add-on) stops before **Home safely** until the summary is sent; after the visit, **Edit visit summary** rewrites it.
 
 Run the today-booking demo (S1 and S2) while appointment slots remain: today's list only offers times still ahead, and Level 1 needs the pickup an hour earlier to be ahead too, so book before about 3:30 PM MYT. After that, today is greyed out in the calendar; pick a later day or press **Reset demo for today** the next morning.
 

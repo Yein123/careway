@@ -2,7 +2,7 @@
 import { Auth } from 'firebase-admin/auth';
 import { Firestore } from 'firebase-admin/firestore';
 import { fail } from '../errors';
-import { advanceStepLogic } from '../booking/steps';
+import { advanceStepLogic, submitSummaryLogic } from '../booking/steps';
 import { lockGroupTx } from '../booking/lock';
 import { offerNext, TargetCol } from '../booking/offers';
 import { respondToOfferLogic } from '../booking/respond';
@@ -75,10 +75,21 @@ export async function adminAdvanceDeliveryLogic(db: Firestore, raw: unknown, now
   return { stage };
 }
 
-export async function adminAdvanceStepLogic(db: Firestore, raw: unknown, now: Date): Promise<{ step: string }> {
-  const bookingId = strOf((raw as { bookingId?: unknown })?.bookingId, 'booking');
+async function assignedCaregiver(db: Firestore, bookingId: string): Promise<string> {
   const b = (await db.doc(`bookings/${bookingId}`).get()).data();
   if (!b?.caregiverId) fail('not-active', 'This visit is not active.');
-  const { step } = await advanceStepLogic(db, b.caregiverId, { bookingId }, now);
+  return b.caregiverId;
+}
+
+export async function adminAdvanceStepLogic(db: Firestore, raw: unknown, now: Date): Promise<{ step: string }> {
+  const bookingId = strOf((raw as { bookingId?: unknown })?.bookingId, 'booking');
+  const { step } = await advanceStepLogic(db, await assignedCaregiver(db, bookingId), { bookingId }, now);
   return { step };
+}
+
+/** Writes the visit summary as the booking's assigned caregiver. */
+export async function adminSubmitSummaryLogic(db: Firestore, raw: unknown, now: Date): Promise<{ ok: true }> {
+  const input = raw as { bookingId?: unknown; summary?: unknown };
+  const bookingId = strOf(input?.bookingId, 'booking');
+  return submitSummaryLogic(db, await assignedCaregiver(db, bookingId), { bookingId, summary: input.summary }, now);
 }

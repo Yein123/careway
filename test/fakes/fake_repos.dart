@@ -372,7 +372,7 @@ class FakeReceiptRepo implements ReceiptRepo {
 class FakeAdminRepo implements AdminRepo {
   final bookings = Live<Booking>();
   final deliveries = Live<MedDelivery>();
-  final s3 = Live<Booking>();
+  final visits = Live<Booking>();
 
   @override
   Stream<List<Booking>> watchBookings() => bookings.watch((l) => [...l]);
@@ -381,7 +381,7 @@ class FakeAdminRepo implements AdminRepo {
   Stream<List<MedDelivery>> watchDeliveries() => deliveries.watch((l) => [...l]);
 
   @override
-  Stream<Booking?> watchS3() => s3.watch((l) => l.isEmpty ? null : l.first);
+  Stream<List<Booking>> watchTodayVisits() => visits.watch((l) => [...l]);
 }
 
 /// All fakes bundled, with provider overrides for a ProviderScope.

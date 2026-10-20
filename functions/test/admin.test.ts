@@ -8,6 +8,7 @@ import {
   adminLockGroupLogic,
   adminNotFoundLogic,
   adminRespondOfferLogic,
+  adminSubmitSummaryLogic,
 } from '../src/admin/admin';
 import { APPT, bookingOf, clearDb, describeEmu, ELMINA, NOW, offersFor, seedCaregiver, seedFamily, seedGroup, testDb } from './helpers';
 
@@ -111,5 +112,26 @@ describeEmu('admin demo callables', () => {
     const res = await adminAdvanceStepLogic(db, { bookingId: r.bookingId }, NOW);
     expect(res.step).toBe('picked_up');
     expect((await bookingOf(db, r.bookingId)).steps[0].key).toBe('picked_up');
+  });
+
+  test('adminSubmitSummary writes the summary as the caregiver, letting the visit finish', async () => {
+    const r = await personal();
+    await adminRespondOfferLogic(db, { col: 'bookings', id: r.bookingId, accept: true }, NOW);
+    await db.doc(`bookings/${r.bookingId}`).update({ status: 'confirmed' });
+    for (let i = 0; i < 6; i++) await adminAdvanceStepLogic(db, { bookingId: r.bookingId }, NOW);
+    await expect(adminAdvanceStepLogic(db, { bookingId: r.bookingId }, NOW)).rejects.toEqual(code('summary-required'));
+    const summary = { seenBy: 'Dr Lee', diagnosis: 'Stable', instructions: ['Rest'], nextAppt: '', medicines: '', notes: '' };
+    expect(await adminSubmitSummaryLogic(db, { bookingId: r.bookingId, summary }, NOW)).toEqual({ ok: true });
+    const res = await adminAdvanceStepLogic(db, { bookingId: r.bookingId }, NOW);
+    expect(res.step).toBe('home');
+    const b = await bookingOf(db, r.bookingId);
+    expect(b.status).toBe('completed');
+    expect(b.summary.diagnosis).toBe('Stable');
+  });
+
+  test('adminSubmitSummary on an unassigned booking fails not-active', async () => {
+    const r = await personal();
+    await expect(adminSubmitSummaryLogic(db, { bookingId: r.bookingId, summary: { seenBy: '', diagnosis: 'x' } }, NOW))
+      .rejects.toEqual(code('not-active'));
   });
 });

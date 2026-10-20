@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/async_view.dart';
 import '../../data/api.dart';
 import '../../data/models/booking.dart';
 import '../../data/models/delivery.dart';
 import '../../data/providers.dart';
+import '../../domain/booking_status.dart';
+import '../../domain/pricing.dart';
 import 'admin_providers.dart';
 
 /// One row in "Live requests": a booking or a medicine delivery.
@@ -210,39 +213,95 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
     );
   }
 
-  Widget _visit() {
-    final s3 = ref.watch(adminS3Provider);
-    final b = s3.value;
-    final label = b == null || b.steps.isEmpty
-        ? 'Not started'
-        : (stepLabels[b.steps.last.key] ?? b.steps.last.key);
+  Widget _visits() {
+    final visits = ref.watch(adminTodayVisitsProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Caregiver visit', style: CwText.h2),
+        const Text("Today's caregiver visits", style: CwText.h2),
+        const SizedBox(height: 4),
+        const Text('Act as the assigned caregiver: post each visit update, then write the summary.', style: CwText.muted),
         const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: CwColors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: CwColors.line),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: CwText.h3),
-              const SizedBox(height: 12),
-              _btn('s3:advance', 'Advance step', () async {
-                await _api.adminAdvanceStep(demoS3BookingId);
-                return null;
-              }, primary: true),
-            ],
-          ),
+        AsyncView<List<Booking>>(
+          value: visits,
+          data: (bs) {
+            final live = [for (final b in bs) if (b.caregiverId != null && _visitStatuses.contains(b.status)) b];
+            if (live.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text('No visits today.', style: CwText.muted),
+              );
+            }
+            return Column(children: [for (final b in live) _visitCard(b)]);
+          },
         ),
       ],
     );
+  }
+
+  static const _visitStatuses = {BookingStatus.confirmed, BookingStatus.inProgress, BookingStatus.completed};
+
+  Widget _visitCard(Booking b) {
+    final k = 'visit/${b.id}';
+    final next = b.nextStepKey;
+    final active = b.status == BookingStatus.confirmed || b.status == BookingStatus.inProgress;
+    final needsSummary = b.level == 2 || b.addons.contains(Addon.visitSummary);
+    final blocked = next == b.stepKeys.last && needsSummary && b.summary == null;
+    final seenDoctor = b.status == BookingStatus.completed || b.steps.any((s) => s.key == 'with_doctor');
+    final last = b.steps.isEmpty ? 'Not started' : (stepLabels[b.steps.last.key] ?? b.steps.last.key);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: CwColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CwColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(_title(b.guardianName, b.patient.name), style: CwText.h3),
+          const SizedBox(height: 4),
+          Text('${timeLabel(b.apptAt)} · ${b.caregiverName ?? 'Caregiver'}', style: CwText.muted),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            _pill(b.level == 1 ? 'Group' : 'Escort', CwColors.lilac, CwColors.primaryDark),
+            _pill(_statusLabel(b.status.wire), CwColors.tealSoft, CwColors.tealDark),
+            if (b.summary != null) _pill('Summary sent', CwColors.successSoft, CwColors.successDark),
+          ]),
+          const SizedBox(height: 10),
+          Text('$last · ${b.steps.length} of ${b.stepKeys.length} done', style: CwText.h3),
+          if (blocked) ...[
+            const SizedBox(height: 4),
+            const Text('Write the visit summary before marking Home safely.', style: CwText.muted),
+          ],
+          const SizedBox(height: 12),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            if (active && next != null && !blocked)
+              _btn('$k:advance', 'Mark done: ${stepLabels[next] ?? next}', () async {
+                await _api.adminAdvanceStep(b.id);
+                return null;
+              }, primary: true),
+            if (seenDoctor)
+              OutlinedButton(
+                onPressed: () => _openSummary(b),
+                child: Text(b.summary == null ? 'Write visit summary' : 'Edit visit summary'),
+              ),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openSummary(Booking b) async {
+    final sent = await showDialog<bool>(
+      context: context,
+      builder: (_) => _SummaryDialog(booking: b, api: _api),
+    );
+    if (sent == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Visit summary sent')));
+    }
   }
 
   @override
@@ -283,13 +342,13 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
                       children: [
                         Expanded(flex: 3, child: _liveRequests()),
                         const SizedBox(width: 24),
-                        Expanded(flex: 2, child: _visit()),
+                        Expanded(flex: 2, child: _visits()),
                       ],
                     )
                   else ...[
                     _liveRequests(),
                     const SizedBox(height: 24),
-                    _visit(),
+                    _visits(),
                   ],
                 ],
               ),
@@ -297,6 +356,111 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
           },
         ),
       ),
+    );
+  }
+}
+
+/// Visit summary form, submitted on behalf of the booking's caregiver.
+class _SummaryDialog extends StatefulWidget {
+  const _SummaryDialog({required this.booking, required this.api});
+  final Booking booking;
+  final CareWayApi api;
+
+  @override
+  State<_SummaryDialog> createState() => _SummaryDialogState();
+}
+
+class _SummaryDialogState extends State<_SummaryDialog> {
+  late final VisitSummary? _s = widget.booking.summary;
+  late final _seenBy = TextEditingController(text: _s?.seenBy ?? '');
+  late final _diagnosis = TextEditingController(text: _s?.diagnosis ?? '');
+  late final _instructions = TextEditingController(text: _s?.instructions.join('\n') ?? '');
+  late final _medicines = TextEditingController(text: _s?.medicines ?? '');
+  late final _nextAppt = TextEditingController(text: _s?.nextAppt ?? '');
+  late final _notes = TextEditingController(text: _s?.notes ?? '');
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    for (final c in [_seenBy, _diagnosis, _instructions, _medicines, _nextAppt, _notes]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.api.adminSubmitSummary(widget.booking.id, {
+        'seenBy': _seenBy.text.trim(),
+        'diagnosis': _diagnosis.text.trim(),
+        'instructions': [
+          for (final l in _instructions.text.split('\n'))
+            if (l.trim().isNotEmpty) l.trim(),
+        ],
+        'nextAppt': _nextAppt.text.trim(),
+        'medicines': _medicines.text.trim(),
+        'notes': _notes.text.trim(),
+      });
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) setState(() => _error = friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Widget _field(String label, TextEditingController c, {int lines = 1, String? hint, Key? key}) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: TextField(
+          key: key,
+          controller: c,
+          minLines: lines,
+          maxLines: lines,
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(labelText: label, hintText: hint, border: const OutlineInputBorder()),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final b = widget.booking;
+    final valid = _diagnosis.text.trim().isNotEmpty;
+    return AlertDialog(
+      title: Text('Visit summary · ${b.patient.name}'),
+      content: SizedBox(
+        width: 480,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Sent as ${b.caregiverName ?? 'the caregiver'}. Only the family group can see it.', style: CwText.muted),
+              const SizedBox(height: 12),
+              _field('Seen by', _seenBy, hint: 'e.g. Dr Lee'),
+              _field("Doctor's advice", _diagnosis, lines: 2, hint: 'Knee is improving. Continue physiotherapy.', key: const ValueKey('as-diagnosis')),
+              _field('Medical instructions (one per line)', _instructions, lines: 3),
+              _field('Medicine collected', _medicines, hint: 'e.g. Paracetamol 500 mg'),
+              _field('Next appointment', _nextAppt, hint: 'e.g. 26 Jan 2027'),
+              _field('Notes', _notes, hint: 'e.g. BP 132/84 · weight 61 kg'),
+              if (_error != null) Text(_error!, style: const TextStyle(color: CwColors.pink)),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+        FilledButton(
+          onPressed: _busy || !valid ? null : _send,
+          child: _busy
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2))
+              : const Text('Send to family group'),
+        ),
+      ],
     );
   }
 }

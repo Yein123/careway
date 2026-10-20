@@ -78,6 +78,9 @@ abstract class CareWayApi {
   Future<void> adminAdvanceDelivery(String id, {bool toEnd = false});
   Future<void> adminAdvanceStep(String bookingId);
 
+  /// Writes the visit summary as the booking's assigned caregiver.
+  Future<void> adminSubmitSummary(String bookingId, Map<String, dynamic> summary);
+
   // Push tokens (Android).
   Future<void> claimPushToken(String token);
   Future<void> releasePushToken(String token);
@@ -188,6 +191,10 @@ class FunctionsCareWayApi implements CareWayApi {
   @override
   Future<void> adminAdvanceStep(String bookingId) =>
       _call('adminAdvanceStep', {'bookingId': bookingId});
+
+  @override
+  Future<void> adminSubmitSummary(String bookingId, Map<String, dynamic> summary) =>
+      _call('adminSubmitSummary', {'bookingId': bookingId, 'summary': summary});
 
   @override
   Future<void> claimPushToken(String token) =>

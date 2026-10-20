@@ -143,6 +143,12 @@ class FakeApi implements CareWayApi {
   }
 
   @override
+  Future<void> adminSubmitSummary(String bookingId, Map<String, dynamic> summary) async {
+    calls.add(('adminSubmitSummary', {'bookingId': bookingId, ...summary}));
+    if (nextError != null) _throw();
+  }
+
+  @override
   Future<void> releasePushToken(String token) async {
     calls.add(('releasePushToken', token));
     if (nextError != null) _throw();
