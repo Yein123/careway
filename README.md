@@ -20,7 +20,8 @@ plus medicine delivered to the doorstep.
 ![Firebase](https://img.shields.io/badge/Firebase-Backend-FFCA28?logo=firebase&logoColor=black)
 ![Theme](https://img.shields.io/badge/Theme_1-People_·_Township_of_Tomorrow-1A7891)
 
-<sub>Team <b>Star3</b> · Universiti Sains Malaysia · Built for Sime Darby Property townships</sub>
+<sub>Team <b>Star3</b> · Universiti Sains Malaysia · Built for Sime Darby Property townships</sub><br />
+<sub>© 2026 Lew Jia Suen, Liew Choy Yein & Lim Huei Ching. All rights reserved.</sub>
 
 </div>
 
