@@ -122,7 +122,7 @@ A helper brings the medicine home, with live tracking.
 
 ## 🛠️ Tech stack
 
-| | |
+| Part | What we use |
 |---|---|
 | 📱 **App** | Flutter: one app for Android and the web, with a family view and a caregiver view |
 | ☁️ **Backend** | Firebase Authentication, Cloud Firestore and Cloud Functions |
