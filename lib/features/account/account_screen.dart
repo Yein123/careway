@@ -438,12 +438,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             onTap: () => context.push('/account/notifications'),
           ),
           LinkRow(
-            icon: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
-            title: 'Language',
-            sub: '${u?.settings.language ?? 'English'} · text size ${_sizeName(u?.settings.textScale ?? 1)}',
-            onTap: () => context.push('/account/language'),
-          ),
-          LinkRow(
             icon: lockIcon,
             title: 'Privacy',
             sub: 'Who can see patient profiles',
@@ -516,4 +510,3 @@ class _CallPill extends StatelessWidget {
 
 const textSizes = [('Normal', 1.0), ('Large', 1.15), ('Extra large', 1.3)];
 
-String _sizeName(double s) => textSizes.firstWhere((t) => t.$2 == s, orElse: () => textSizes.first).$1.toLowerCase();

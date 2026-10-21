@@ -572,8 +572,6 @@ class PrivacyScreen extends ConsumerWidget {
       ListCard(children: [
         actionRow('Request a copy of my data', 'Sent to your email within 7 days', 'Request', CwColors.primary,
             () => info("We'll email a copy of your data within 7 days.")),
-        actionRow('Delete my account', 'Family group admins are told first', 'Delete', const Color(0xFFA02A4C),
-            () => info('To delete your account, contact the CareWay coordinator. Family group admins are told first.')),
       ]),
       const _Note("CareWay follows Malaysia's Personal Data Protection Act 2010."),
     ]);
