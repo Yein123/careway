@@ -30,6 +30,17 @@ export function caregiverFromDoc(uid: string, d: FirebaseFirestore.DocumentData)
   };
 }
 
+/** Demo: every booking and delivery request goes to this caregiver while their profile exists. */
+export const DEMO_CAREGIVER_EMAIL = 'ravi@careway.demo';
+
+/** The demo caregiver's uid, or null when they have no user or caregiver profile (normal matching then applies). */
+export async function demoCaregiverUid(db: Firestore): Promise<string | null> {
+  const q = await db.collection('users').where('email', '==', DEMO_CAREGIVER_EMAIL).limit(1).get();
+  const uid = q.docs[0]?.id;
+  if (!uid) return null;
+  return (await db.doc(`caregivers/${uid}`).get()).exists ? uid : null;
+}
+
 export async function loadCaregivers(db: Firestore): Promise<Caregiver[]> {
   const q = await db.collection('caregivers').get();
   return q.docs.map((d) => caregiverFromDoc(d.id, d.data()));

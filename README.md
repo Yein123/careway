@@ -1,96 +1,185 @@
+<div align="center">
+
+<img src="assets/images/careway-family-icon-rounded.png" alt="CareWay family app logo" width="120" />
+&nbsp;&nbsp;&nbsp;&nbsp;
+<img src="assets/images/careway-caregiver-icon-512.png" alt="CareWay caregiver app logo" width="120" />
+
+<sub><b>Family app</b> &nbsp;·&nbsp; <b>Caregiver app</b></sub>
+
 # CareWay
 
-Flutter (Android + Web) app on Firebase that helps families get relatives to and through medical visits. Guardians book a shared ride (Level 1) or a one-to-one escort (Level 2), qualified caregivers accept the job, and the family follows the visit live. Also: medicine delivery with a distance-based fee.
+### Every journey, with care.
 
-- Design spec: `docs/superpowers/specs/2026-10-17-careway-app-design.md`
-- Implementation plan: `docs/superpowers/plans/2026-10-17-careway-app.md`
+Affordable, trusted help to get residents **to and through** their medical visits,<br />
+plus medicine delivered to the doorstep.
 
-## Layout
+[![Try it now](https://img.shields.io/badge/▶_Try_it_now-careway--tehwoq.web.app-6C4DE0?style=for-the-badge)](https://careway-tehwoq.web.app/)
+[![Getting started](https://img.shields.io/badge/Getting_started-2_minutes-FF8A65?style=for-the-badge)](#getting-started)
 
-| Path | What |
+![Flutter](https://img.shields.io/badge/Flutter-Android_%26_Web-02569B?logo=flutter&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-Backend-FFCA28?logo=firebase&logoColor=black)
+![Theme](https://img.shields.io/badge/Theme_1-People_·_Township_of_Tomorrow-1A7891)
+
+<sub>Team <b>Star3</b> · Universiti Sains Malaysia · Built for Sime Darby Property townships</sub>
+
+</div>
+
+---
+
+## Contents
+
+- 🏥 [The problem](#the-problem)
+- 👨‍👩‍👧 [Who it is for](#who-it-is-for)
+- 💡 [Our solution](#our-solution)
+- ✨ [What makes it different](#what-makes-it-different)
+- 🛠️ [Tech stack](#tech-stack)
+- 🚀 [Try it (for testing)](#try-it-for-testing)
+  - 🔑 [Test accounts](#test-accounts)
+  - ▶️ [Getting started](#getting-started)
+- 🌱 [Pilot plan](#pilot-plan)
+
+---
+
+<a id="the-problem"></a>
+
+## 🏥 The problem
+
+> **Getting a parent to a routine check-up shouldn't cost a working adult a full day of leave, but today it often does.**
+
+<table>
+<tr>
+<td align="center" width="25%"><h2>3.9M</h2>Malaysians are already 60 or older, and the number keeps climbing.</td>
+<td align="center" width="25%"><h2>6 hrs</h2>How long a patient can wait at a busy public clinic.</td>
+<td align="center" width="25%"><h2>RM 210</h2>What a private escort charges before the clock even passes 4 hours.</td>
+<td align="center" width="25%"><h2>49.6%</h2>Roughly one in two working Malaysians is also caring for someone.</td>
+</tr>
+</table>
+
+<a id="who-it-is-for"></a>
+
+## 👨‍👩‍👧 Who it is for
+
+- **Families** who book the visit and follow it from work
+- **Patients** (older parents, children, OKU, people after surgery) who need a ride and someone beside them
+- **Caregivers** from partner agencies who do the escorting and keep the family updated
+
+<a id="our-solution"></a>
+
+## 💡 Our solution
+
+Pick the amount of help the patient actually needs, and pay only for that.
+
+| | Service | Price | What you get |
+|:-:|---|---|---|
+| 🚐 | **Group Saver** · Level 1 | **RM 22** / visit | Shared van and a group helper; ride home at the next scheduled return |
+| ⚡ | **Group Flex** · Level 1 | **RM 35** / visit | Shared van and a group helper; ride home as soon as the patient is done |
+| 🤝 | **Personal** · Level 2 | **RM 30** / hour | One-to-one escort, door to door, who stays for the whole visit including the doctor's room |
+| 💊 | **Medicine delivery** | **RM 5** + distance | Any pharmacy or hospital, a pickup window, and live tracking to the doorstep |
+
+**Included in every group visit:** ✅ Pre-registration · ✅ Help at registration · ✅ Queue tracking · ✅ Live family updates
+
+**Optional add-ons:** Language help · Consult sit-in · Wheelchair · Medicine collection · Visit summary
+
+<sub>Sample prices, to be tested in the pilot. Waiting time is never charged.</sub>
+
+<a id="what-makes-it-different"></a>
+
+## ✨ What makes it different
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+**🧩 Pooled help**<br />
+Neighbours share one van and one helper, so the cost is split.
+
+</td>
+<td width="50%" valign="top">
+
+**🏘️ Built around the township**<br />
+Rides are grouped by neighbourhood, hospital and time.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+**👪 One family view**<br />
+Everyone in the family can book and see each visit.
+
+</td>
+<td width="50%" valign="top">
+
+**📍 Medicine delivery**<br />
+A helper brings the medicine home, with live tracking.
+
+</td>
+</tr>
+</table>
+
+<a id="tech-stack"></a>
+
+## 🛠️ Tech stack
+
+| | |
 |---|---|
-| `lib/` | Flutter app (Riverpod + go_router). `domain/` pricing and needs rules, `data/` models and Firestore repositories, `features/` screens |
-| `functions/` | Cloud Functions (TypeScript): matching, offers, payment, cancellation, group lock/settlement, visit steps, deliveries, demo seed |
-| `firestore.rules`, `firestore.indexes.json` | Security rules and indexes |
-| `tool/dev-env.sh` | Puts JDK 21 and Node 22 on PATH for the emulators |
+| 📱 **App** | Flutter: one app for Android and the web, with a family view and a caregiver view |
+| ☁️ **Backend** | Firebase Authentication, Cloud Firestore and Cloud Functions |
+| 🔔 **Notifications** | Firebase Cloud Messaging (push notifications on Android) |
+| 🌐 **Hosting** | Firebase Hosting |
 
-## One-time setup
+<a id="try-it-for-testing"></a>
 
-Firebase client config is **not committed** (it contains API keys). Generate it locally:
+## 🚀 Try it (for testing)
 
-```bash
-dart pub global activate flutterfire_cli
-flutterfire configure --project=careway-tehwoq --platforms=android,web
-```
+<div align="center">
 
-This writes `lib/firebase_options.dart` and `android/app/google-services.json` (both gitignored).
+### 👉 **[careway-tehwoq.web.app](https://careway-tehwoq.web.app/)** 👈
 
-Requirements: Flutter 3.38+, Firebase CLI, JDK 21+ and Node 22 (see `tool/dev-env.sh` for the paths used on this machine).
+<sub>For testing purposes only. All data is demo data and no real money moves.</sub>
 
-```bash
-flutter pub get
-npm --prefix functions install
-```
+</div>
 
-## Run locally against the emulators
+<a id="test-accounts"></a>
 
-```bash
-source tool/dev-env.sh
-firebase emulators:start --only auth,firestore,functions   # Firestore on 8085, Auth 9099, Functions 5001
-flutter run -d chrome --dart-define=USE_EMULATOR=true       # in another terminal
-```
+### 🔑 Test accounts
 
-On the sign-in screen (debug builds) tap **Load demo data**, then sign in (password `careway123` for all):
+| | Role | Email | Password |
+|:-:|---|---|---|
+| <img src="assets/images/careway-family-icon-rounded.png" width="28" /> | **Family (guardian)** | `test@gmail.com` | `123456789` |
+| <img src="assets/images/careway-caregiver-icon-512.png" width="28" /> | **Caregiver** | `ravi@careway.demo` | `careway123` |
 
-| Role | Email | Who |
+Every booking and medicine delivery goes to Ravi, so whatever you book as the family shows up in his caregiver app.
+
+<a id="getting-started"></a>
+
+### ▶️ Getting started
+
+1. Open **[careway-tehwoq.web.app](https://careway-tehwoq.web.app/)** in your browser.
+2. Sign in as the family with `test@gmail.com`.
+3. On the dashboard, tap **Book a visit**: choose who is going, the hospital, the date and time, then pick **Level 1 (Group)** or **Level 2 (Personal)** and pay.
+4. Check **My visits** for upcoming, ongoing and past visits, or try **Medicine delivery** from the dashboard.
+5. **Want to see the caregiver side too?** Sign in as `ravi@careway.demo` in another browser, a private window or on your phone. You'll see the job request arrive, and as Ravi taps through each step of the visit, the family view updates live.
+
+<a id="pilot-plan"></a>
+
+## 🌱 Pilot plan
+
+| When | Stage | What happens |
 |---|---|---|
-| Guardian | parent@gmail.com | Siti, books for her child Adam |
-| Guardian | user@gmail.com | Aisyah, books for her mother Zainab |
-| Guardian (self) | self@gmail.com | Hafiz, books for himself |
-| Caregiver | caregiver@gmail.com | Aina |
-| Extra caregivers | farid@careway.demo, nurul@careway.demo, meiling@careway.demo | group helpers and escorts |
+| Months 0 to 2 | 🔍 **Validate** | Interview residents; sign one caregiver agency and one hospital |
+| Months 3 to 6 | 🧪 **Pilot** | Launch in one township (for example Elmina); track visits completed, leave days saved, on-time arrival and ratings |
+| Months 7 to 12 | 📈 **Expand** | More townships, hospitals and caregiver partners |
+| Year 2 | 🏡 **Embed** | Part of SDP township services, with hospital and insurer partners |
 
-Note: the Functions emulator does not run scheduled jobs (offer expiry, group lock, delivery progress) on its own.
+**Business model:** families pay per visit, caregivers are paid per group or per hour, and CareWay keeps a small platform fee on each booking.
 
-## Admin and live demo
+---
 
-One-time setup for the admin account (application default login only, no key file):
+<div align="center">
 
-```bash
-gcloud auth application-default login
-node functions/scripts/grant-admin.js admin@careway.demo <password>
-```
+<img src="assets/images/careway-family-icon-rounded.png" width="48" />
 
-Open https://careway-tehwoq.web.app/admin and sign in with that account; admins always land on `/admin`. Signing in as `admin@gmail.com` (any sign-up with that email) is also treated as admin, with no script needed. To redeploy the web app: `flutter build web --release && firebase deploy --only hosting --project careway-tehwoq`. Press **Reset demo for today** before each run to re-seed today's groups and the scenario 3 visit.
+**CareWay** · Every journey, with care.
 
-Run sheet:
-
-1. **S1, guardian (user@gmail.com, phone):** book today's group. On the admin page press **Accept**, **Reject**, **Not found** or **Group set**; each result arrives as a push on the phone. For a medicine delivery, press **Next stage**: pushes arrive at collecting and delivered only.
-2. **S2, self booking (self@gmail.com):** same flow as S1.
-3. **S3, caregiver:** sign in as caregiver@gmail.com on the phone, open today's visit and tap through the steps, while the guardian view runs in a laptop browser as user@gmail.com. Or drive it from the admin page: **Today's caregiver visits** lists every caregiver-assigned visit with today's appointment. **Mark done: <step>** posts the next update as the caregiver, and once the doctor step is done **Write visit summary** sends the summary to the family. A Level 2 visit (or one with the Visit summary add-on) stops before **Home safely** until the summary is sent; after the visit, **Edit visit summary** rewrites it.
-
-Run the today-booking demo (S1 and S2) while appointment slots remain: today's list only offers times still ahead, and Level 1 needs the pickup an hour earlier to be ahead too, so book before about 3:30 PM MYT. After that, today is greyed out in the calendar; pick a later day or press **Reset demo for today** the next morning.
-
-Push notifications are Android only. The push trigger (`onNotificationCreated`) runs in `us-central1` because the Firestore database is `nam5`; all callables stay in `asia-southeast1`.
-
-## Tests
-
-```bash
-flutter analyze && flutter test                  # app: unit + widget tests
-source tool/dev-env.sh
-npm --prefix functions test                      # functions: pure rules
-npm --prefix functions run test:emu              # functions + security rules against the emulator
-firebase emulators:exec --only auth,firestore,functions "node functions/scripts/e2e-emulator.js"   # end-to-end via real callables
-```
-
-## Deploy
-
-Needs the Blaze plan on `careway-tehwoq` and Email/Password sign-in enabled in the Firebase console.
-
-```bash
-source tool/dev-env.sh
-firebase deploy --only firestore:rules,firestore:indexes,functions --project careway-tehwoq
-flutter build web            # or: flutter build apk
-```
-
-Payments are simulated; no money moves.
+</div>

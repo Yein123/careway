@@ -8,6 +8,7 @@ import { deriveRequirements } from '../domain/needs';
 import { deliveryFee, routeKm } from '../domain/pricing';
 import { HOSPITALS, PICKUP_POINTS } from '../places';
 import { rankFor } from '../booking/request';
+import { demoCaregiverUid } from '../booking/load';
 import { METHOD_LABEL, PAYMENT_METHODS } from '../booking/pay';
 
 interface DeliveryInput {
@@ -46,6 +47,7 @@ export async function requestDeliveryLogic(db: Firestore, uid: string, raw: unkn
 
   const req = deriveRequirements({ level: 1, mobility: 'independent', patientAge: 30, addons: [], delivery: true });
   const window = { start, end: new Date(start.getTime() + 3 * HOUR) };
+  const demo = await demoCaregiverUid(db);
   const ranked = await rankFor(db, req, { apptAt: start, pickup: home, window, familyId: familyId!, patientId: input.patientId });
   if (ranked.length === 0) fail('no-caregiver', 'No helper is free in that window. Try another time; nothing was charged.');
 
@@ -56,7 +58,8 @@ export async function requestDeliveryLogic(db: Firestore, uid: string, raw: unkn
     let cg: FirebaseFirestore.DocumentData | undefined;
     for (const id of ranked) {
       const data = (await tx.get(db.doc(`caregivers/${id}`))).data();
-      if (data?.onDuty) {
+      // The demo caregiver takes every delivery, on duty or not.
+      if (data?.onDuty || id === demo) {
         cgUid = id;
         cg = data;
         break;

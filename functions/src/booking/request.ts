@@ -6,7 +6,7 @@ import { filterCandidates, qualifies, rankCandidates } from '../domain/matching'
 import { deriveRequirements, level1Allowed, Mobility, needLabels, Requirements } from '../domain/needs';
 import { ESCORT_HOURLY_SEN, DEFAULT_ESCORT_HOURS, GROUP_CAPACITY, groupShareSen } from '../domain/pricing';
 import { mytDate, mytTime, placeById } from '../places';
-import { jobWindow, loadCaregivers, loadCommitments, loadPatientHistory, caregiverFromDoc } from './load';
+import { demoCaregiverUid, jobWindow, loadCaregivers, loadCommitments, loadPatientHistory, caregiverFromDoc } from './load';
 import { offerNext, OFFER_TTL_MS } from './offers';
 
 export interface RequestInput {
@@ -172,6 +172,8 @@ export async function rankFor(
   req: Requirements,
   o: { apptAt: Date; pickup: { lat: number; lng: number }; window: { start: Date; end: Date }; familyId: string; patientId: string; language?: string },
 ): Promise<string[]> {
+  const demo = await demoCaregiverUid(db);
+  if (demo) return [demo];
   const [cgs, commitments, history] = await Promise.all([
     loadCaregivers(db),
     loadCommitments(db, mytDate(o.apptAt)),
@@ -233,9 +235,10 @@ async function joinGroup(
 
   if (result.status === 'draft') return { bookingId: bookingRef.id, status: 'draft' };
 
-  // Only the group's own helper can take this rider, and only if they qualify.
-  let ranked: string[] = [];
-  if (result.helper) {
+  // The demo caregiver takes every rider; otherwise only the group's own helper can, and only if they qualify.
+  const demo = await demoCaregiverUid(db);
+  let ranked: string[] = demo ? [demo] : [];
+  if (!demo && result.helper) {
     const cgSnap = await db.doc(`caregivers/${result.helper}`).get();
     if (cgSnap.exists) {
       const helper = caregiverFromDoc(cgSnap.id, cgSnap.data()!);
