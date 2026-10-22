@@ -85,15 +85,14 @@ class _LinkButton extends StatelessWidget {
 
 /// Header row: back, title + subtitle, optional trailing pill.
 class _Header extends StatelessWidget {
-  const _Header({required this.title, required this.subtitle, this.trailing, this.onBack});
+  const _Header({required this.title, required this.subtitle, this.trailing});
   final String title;
   final String subtitle;
   final Widget? trailing;
-  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) => Row(children: [
-        SquareIconButton(svg: CwIcons.back, label: 'Back', onTap: onBack ?? () => context.canPop() ? context.pop() : context.go('/home')),
+        SquareIconButton(svg: CwIcons.back, label: 'Back', onTap: () => context.canPop() ? context.pop() : context.go('/home')),
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -409,7 +408,6 @@ class _Progress extends ConsumerWidget {
       _Header(
         title: 'Delivery progress',
         subtitle: "$first's medicine · ${bookingRef(d.id)}",
-        onBack: () => context.go('/home'),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
           decoration: BoxDecoration(color: const Color(0xFFDDF5EC), borderRadius: BorderRadius.circular(8)),

@@ -36,14 +36,14 @@ class PendingScreen extends ConsumerWidget {
       final b = next.value;
       if (b == null || prev?.value?.status == b.status) return;
       final to = routeForStatus(b);
-      if (to != null) context.go(to);
+      if (to != null) context.pushReplacement(to);
     });
     final booking = ref.watch(bookingProvider(bookingId));
     return DesignScaffold(
       gap: 18,
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       children: [
-        PageHeader(title: 'Request sent', help: true, onBack: () => context.go('/home')),
+        const PageHeader(title: 'Request sent', help: true),
         AsyncView<Booking?>(
           value: booking,
           onRetry: () => ref.invalidate(bookingProvider(bookingId)),

@@ -15,6 +15,8 @@ import '../../domain/pricing.dart';
 import '../home/home_screen.dart' show placeName;
 import 'booking_common.dart';
 import 'booking_draft.dart';
+import 'confirmed_screen.dart';
+import 'payment_screen.dart' show isPaid;
 
 const _ticks = {
   GroupPackage.saver: ['Shared van + helper', 'Home at 12:30 or 3:30 PM', 'Free cancel 24h before'],
@@ -51,7 +53,10 @@ class PackageScreen extends ConsumerWidget {
               PageHeader(title: 'Group found', subtitle: 'Step 3 of 3 · Choose a package', help: true),
               EmptyState(icon: Icons.search_off, title: 'Booking not found'),
             ])
-          : _Body(b),
+          // Opened from an old "pay to confirm" notification after paying.
+          : isPaid(b)
+              ? ConfirmedScreen(bookingId: bookingId)
+              : _Body(b),
     );
   }
 }

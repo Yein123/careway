@@ -60,7 +60,7 @@ class _NotFoundScreenState extends ConsumerState<NotFoundScreen> {
     return DesignScaffold(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       children: [
-        PageHeader(title: 'Not successful', help: true, onBack: () => context.go('/home')),
+        const PageHeader(title: 'Not successful', help: true),
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(color: CwColors.white, borderRadius: BorderRadius.circular(24)),

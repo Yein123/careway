@@ -40,38 +40,62 @@ class _Tab extends StatelessWidget {
 const _title = TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CgColors.ink);
 const _groupLabel = TextStyle(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 0.3, color: CgColors.muted);
 
-/// C6 · Caregiver: schedule (CgSchedule.dc.html)
-class CgScheduleScreen extends ConsumerWidget {
+enum _ScheduleView { day, week, month }
+
+DateTime _dayOf(DateTime t) {
+  final l = t.toLocal();
+  return DateTime(l.year, l.month, l.day);
+}
+
+/// Monday of the week holding [d].
+DateTime _weekStart(DateTime d) => DateTime(d.year, d.month, d.day - (d.weekday - 1));
+
+/// C6 · Caregiver: schedule (CgSchedule.dc.html). Day, week or month view;
+/// tap any date to see its jobs.
+class CgScheduleScreen extends ConsumerStatefulWidget {
   const CgScheduleScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final now = ref.watch(clockProvider)().toLocal();
-    final today = DateTime(now.year, now.month, now.day);
+  ConsumerState<CgScheduleScreen> createState() => _CgScheduleScreenState();
+}
+
+class _CgScheduleScreenState extends ConsumerState<CgScheduleScreen> {
+  _ScheduleView _view = _ScheduleView.week;
+  DateTime? _selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final today = _dayOf(ref.watch(clockProvider)());
+    final selected = _selected ?? today;
     final bookings = ref.watch(cgBookingsProvider);
     final deliveries = ref.watch(cgDeliveriesProvider).value ?? const <MedDelivery>[];
     final items = <(DateTime, Widget)>[
       for (final b in bookings.value ?? const <Booking>[])
-        if (isActiveJob(b) || b.status.wire == 'awaiting_payment')
+        if (isActiveJob(b) || b.status.wire == 'awaiting_payment' || b.status.wire == 'completed')
           (
             b.pickupAt ?? b.apptAt,
             _Row(
               time: b.pickupAt ?? b.apptAt,
               title: b.patient.name,
-              sub: '${placeName(b.hospitalId)}${b.status.wire == 'in_progress' ? ' · in progress' : b.status.wire == 'awaiting_payment' ? ' · waiting for payment' : ''}',
+              sub: '${placeName(b.hospitalId)}${switch (b.status.wire) {
+                'in_progress' => ' · in progress',
+                'awaiting_payment' => ' · waiting for payment',
+                'completed' => ' · completed',
+                _ => '',
+              }}',
               tag: levelLabel(b.level),
               tone: levelTone(b.level),
               onTap: () => context.push('/cg/job/${b.id}'),
             )
           ),
       for (final d in deliveries)
-        if (d.date != null && deliveryStageKeys.contains(d.status.wire) && d.status != DeliveryStatus.delivered)
+        if (d.date != null && deliveryStageKeys.contains(d.status.wire))
           (
             d.date!,
             _Row(
               time: d.date!,
               title: 'Medicine run · ${d.patientName}',
-              sub: '${d.pharmacyName} · ${d.window}',
+              sub: '${d.pharmacyName} · ${d.window}${d.status == DeliveryStatus.delivered ? ' · delivered' : ''}',
               tag: 'Delivery',
               tone: (CwColors.deliverySoft, CwColors.deliveryBlue),
             )
@@ -80,11 +104,34 @@ class CgScheduleScreen extends ConsumerWidget {
 
     final byDay = <DateTime, List<Widget>>{};
     for (final (t, w) in items) {
-      final l = t.toLocal();
-      final day = DateTime(l.year, l.month, l.day);
-      if (day.isBefore(today)) continue;
-      byDay.putIfAbsent(day, () => []).add(w);
+      byDay.putIfAbsent(_dayOf(t), () => []).add(w);
     }
+
+    // Days whose jobs are listed below the calendar.
+    final List<DateTime> shownDays;
+    final String period;
+    switch (_view) {
+      case _ScheduleView.day:
+        shownDays = [selected];
+        period = DateFormat('EEE, d MMM yyyy').format(selected);
+      case _ScheduleView.week:
+        final start = _weekStart(selected);
+        shownDays = [for (var i = 0; i < 7; i++) DateTime(start.year, start.month, start.day + i)];
+        final end = shownDays.last;
+        period = '${DateFormat('d MMM').format(start)} – ${DateFormat('d MMM yyyy').format(end)}';
+      case _ScheduleView.month:
+        shownDays = [selected];
+        period = DateFormat('MMMM yyyy').format(selected);
+    }
+
+    void select(DateTime d) => setState(() => _selected = d);
+    void shift(int dir) => select(switch (_view) {
+          _ScheduleView.day => DateTime(selected.year, selected.month, selected.day + dir),
+          _ScheduleView.week => DateTime(selected.year, selected.month, selected.day + 7 * dir),
+          _ScheduleView.month => DateTime(selected.year, selected.month + dir, 1),
+        });
+
+    final listed = [for (final d in shownDays) if (byDay.containsKey(d)) d];
 
     return _Tab(children: [
       Row(children: [
@@ -95,51 +142,214 @@ class CgScheduleScreen extends ConsumerWidget {
           child: const Text('Set availability', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
         ),
       ]),
+      _ViewSwitch(view: _view, onChanged: (v) => setState(() => _view = v)),
       Row(children: [
-        for (var i = 0; i < 7; i++) ...[
-          if (i > 0) const SizedBox(width: 4),
-          Expanded(
-            child: Builder(builder: (_) {
-              final day = today.add(Duration(days: i));
-              final on = i == 0;
-              final has = byDay.containsKey(day);
-              return Container(
-                height: 64,
-                decoration: BoxDecoration(color: on ? CwColors.teal : CwColors.white, borderRadius: BorderRadius.circular(14)),
-                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Text(DateFormat('EEE').format(day), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: on ? CwColors.white : CgColors.ink)),
-                  const SizedBox(height: 2),
-                  Text('${day.day}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: on ? CwColors.white : CgColors.ink)),
-                  const SizedBox(height: 2),
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(color: has ? (on ? CwColors.white : CwColors.teal) : Colors.transparent, shape: BoxShape.circle),
-                  ),
-                ]),
-              );
-            }),
+        _NavButton(label: 'Previous', icon: CwIcons.back, onTap: () => shift(-1)),
+        Expanded(child: Text(period, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: CgColors.ink))),
+        if (selected != today)
+          TextButton(
+            onPressed: () => select(today),
+            style: TextButton.styleFrom(foregroundColor: CwColors.teal, padding: const EdgeInsets.symmetric(horizontal: 6)),
+            child: const Text('Today', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
           ),
-        ],
+        _NavButton(label: 'Next', icon: CwIcons.chevronRight, onTap: () => shift(1)),
       ]),
+      if (_view == _ScheduleView.month)
+        _MonthGrid(month: selected, selected: selected, today: today, hasJobs: byDay.containsKey, onPick: select)
+      else
+        _WeekStrip(start: _weekStart(selected), selected: selected, today: today, hasJobs: byDay.containsKey, onPick: select),
       AsyncView<List<Booking>>(
         value: bookings,
         onRetry: () => ref.invalidate(cgBookingsProvider),
-        data: (_) => byDay.isEmpty
-            ? const EmptyState(icon: Icons.event_available, title: 'Nothing scheduled', message: 'Accepted jobs show up here.')
+        data: (_) => listed.isEmpty
+            ? EmptyState(
+                icon: Icons.event_available,
+                title: 'Nothing scheduled',
+                message: _view == _ScheduleView.week ? 'No jobs this week.' : 'No jobs on ${DateFormat('EEE d MMM').format(selected)}.',
+              )
             : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                for (final e in byDay.entries) ...[
+                for (final day in listed) ...[
                   Text(
-                    '${e.key == today ? 'TODAY · ' : ''}${DateFormat('EEE d MMM').format(e.key).toUpperCase()}',
+                    '${day == today ? 'TODAY · ' : ''}${DateFormat('EEE d MMM').format(day).toUpperCase()}',
                     style: _groupLabel,
                   ),
                   const SizedBox(height: 8),
-                  for (final w in e.value) Padding(padding: const EdgeInsets.only(bottom: 8), child: w),
+                  for (final w in byDay[day]!) Padding(padding: const EdgeInsets.only(bottom: 8), child: w),
                   const SizedBox(height: 8),
                 ],
               ]),
       ),
     ]);
+  }
+}
+
+class _ViewSwitch extends StatelessWidget {
+  const _ViewSwitch({required this.view, required this.onChanged});
+  final _ScheduleView view;
+  final ValueChanged<_ScheduleView> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(color: CwColors.white, borderRadius: BorderRadius.circular(14)),
+        child: Row(children: [
+          for (final (v, label) in const [(_ScheduleView.day, 'Day'), (_ScheduleView.week, 'Week'), (_ScheduleView.month, 'Month')])
+            Expanded(
+              child: Semantics(
+                button: true,
+                selected: v == view,
+                child: Material(
+                  color: v == view ? CwColors.teal : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => onChanged(v),
+                    child: SizedBox(
+                      height: 38,
+                      child: Center(
+                        child: Text(label,
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: v == view ? CwColors.white : CgColors.ink)),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ]),
+      );
+}
+
+class _NavButton extends StatelessWidget {
+  const _NavButton({required this.label, required this.icon, required this.onTap});
+  final String label;
+  final String icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        label: label,
+        excludeSemantics: true,
+        child: Material(
+          color: CgColors.soft,
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: onTap,
+            child: SizedBox(width: 36, height: 36, child: Center(child: CwIcon(icon, size: 18, strokeWidth: 2.4, color: CwColors.tealDark))),
+          ),
+        ),
+      );
+}
+
+/// One tappable date: weekday (optional), day number and a dot when it has jobs.
+class _DayCell extends StatelessWidget {
+  const _DayCell({required this.day, required this.on, required this.isToday, required this.has, required this.onTap, this.weekday = false, this.height = 64});
+  final DateTime day;
+  final bool on;
+  final bool isToday;
+  final bool has;
+  final VoidCallback onTap;
+  final bool weekday;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = on ? CwColors.white : CgColors.ink;
+    return Material(
+      color: on ? CwColors.teal : CwColors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isToday && !on ? const BorderSide(color: CwColors.teal, width: 2) : BorderSide.none,
+      ),
+      child: InkWell(
+        key: ValueKey('cg-day-${day.year}-${day.month}-${day.day}'),
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: SizedBox(
+          height: height,
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            if (weekday) ...[
+              Text(DateFormat('EEE').format(day), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: fg)),
+              const SizedBox(height: 2),
+            ],
+            Text('${day.day}', style: TextStyle(fontSize: weekday ? 16 : 14, fontWeight: FontWeight.w800, color: fg)),
+            const SizedBox(height: 2),
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: has ? (on ? CwColors.white : CwColors.teal) : Colors.transparent, shape: BoxShape.circle),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _WeekStrip extends StatelessWidget {
+  const _WeekStrip({required this.start, required this.selected, required this.today, required this.hasJobs, required this.onPick});
+  final DateTime start;
+  final DateTime selected;
+  final DateTime today;
+  final bool Function(DateTime) hasJobs;
+  final ValueChanged<DateTime> onPick;
+
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        for (var i = 0; i < 7; i++) ...[
+          if (i > 0) const SizedBox(width: 4),
+          Expanded(
+            child: Builder(builder: (_) {
+              final day = DateTime(start.year, start.month, start.day + i);
+              return _DayCell(day: day, weekday: true, on: day == selected, isToday: day == today, has: hasJobs(day), onTap: () => onPick(day));
+            }),
+          ),
+        ],
+      ]);
+}
+
+class _MonthGrid extends StatelessWidget {
+  const _MonthGrid({required this.month, required this.selected, required this.today, required this.hasJobs, required this.onPick});
+  final DateTime month;
+  final DateTime selected;
+  final DateTime today;
+  final bool Function(DateTime) hasJobs;
+  final ValueChanged<DateTime> onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final first = DateTime(month.year, month.month);
+    final offset = first.weekday - 1; // Monday first
+    final days = DateTime(month.year, month.month + 1, 0).day;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: CwColors.white, borderRadius: BorderRadius.circular(18)),
+      child: Column(children: [
+        Row(children: [
+          for (final d in const ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'])
+            Expanded(child: Text(d, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: CgColors.muted))),
+        ]),
+        const SizedBox(height: 8),
+        for (var week = 0; week * 7 < offset + days; week++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(children: [
+              for (var i = 0; i < 7; i++) ...[
+                if (i > 0) const SizedBox(width: 4),
+                Expanded(
+                  child: Builder(builder: (_) {
+                    final n = week * 7 + i - offset + 1;
+                    if (n < 1 || n > days) return const SizedBox(height: 44);
+                    final day = DateTime(month.year, month.month, n);
+                    return _DayCell(day: day, height: 44, on: day == selected, isToday: day == today, has: hasJobs(day), onTap: () => onPick(day));
+                  }),
+                ),
+              ],
+            ]),
+          ),
+      ]),
+    );
   }
 }
 

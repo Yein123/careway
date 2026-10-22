@@ -43,8 +43,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final uid = ref.read(authStateProvider).value;
     final router = GoRouter.of(context);
     if (uid != null && !n.read) await ref.read(notificationRepoProvider).markRead(uid, n.id);
-    if (n.link != null) router.go(n.link!);
+    final link = n.link;
+    if (link == null) return;
+    // Tabs are switched to; other pages are pushed so Back returns here.
+    _tabRoots.contains(link) ? router.go(link) : router.push(link);
   }
+
+  static const _tabRoots = {'/home', '/visits', '/family', '/account', '/cg', '/cg/schedule', '/cg/patients', '/cg/account'};
 
   Future<void> _markAll(List<AppNotification> list) async {
     final uid = ref.read(authStateProvider).value;

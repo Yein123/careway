@@ -16,6 +16,7 @@ import '../../domain/pricing.dart';
 import '../home/home_screen.dart' show placeName;
 import 'booking_common.dart';
 import 'booking_draft.dart';
+import 'confirmed_screen.dart';
 
 /// Simulated payment methods (spec: payments are simulated).
 const paymentMethods = [
@@ -86,10 +87,15 @@ class PaymentScreen extends ConsumerWidget {
       ),
       data: (b) => b == null
           ? const CwPage(title: 'Payment', children: [EmptyState(icon: Icons.search_off, title: 'Booking not found')])
-          : _Body(b),
+          : isPaid(b)
+              ? ConfirmedScreen(bookingId: bookingId)
+              : _Body(b),
     );
   }
 }
+
+/// Paid bookings show the confirmation instead of asking for payment again.
+bool isPaid(Booking b) => const {BookingStatus.confirmed, BookingStatus.inProgress, BookingStatus.completed}.contains(b.status);
 
 class _Body extends ConsumerStatefulWidget {
   const _Body(this.b);
@@ -128,18 +134,14 @@ class _BodyState extends ConsumerState<_Body> {
     final l1 = b.level == 1;
     final subtitle = l1 ? 'Level 1 group · last step' : 'Level 2 escort · last step';
     if (b.status != BookingStatus.awaitingPayment) {
-      final paid = b.status == BookingStatus.confirmed;
       return DesignScaffold(children: [
         PageHeader(title: 'Payment', subtitle: subtitle, help: true),
-        EmptyState(
-          icon: paid ? Icons.check_circle_outline : Icons.timer_off_outlined,
-          title: paid ? 'Already paid' : 'This booking is no longer waiting for payment',
-          message: paid ? null : 'Nothing has been charged.',
+        const EmptyState(
+          icon: Icons.timer_off_outlined,
+          title: 'This booking is no longer waiting for payment',
+          message: 'Nothing has been charged.',
         ),
-        BigButton(
-          label: paid ? 'View booking' : 'Back to home',
-          onPressed: () => context.go(paid ? '/booking/${b.id}/confirmed' : '/home'),
-        ),
+        BigButton(label: 'Back to home', onPressed: () => context.go('/home')),
       ]);
     }
 

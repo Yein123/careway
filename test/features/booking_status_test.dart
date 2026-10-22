@@ -40,7 +40,7 @@ void main() {
     expect(find.textContaining('Waiting for Farid A. to accept'), findsOneWidget);
     fakes.booking.put(booking(status: BookingStatus.awaitingPayment));
     await tester.pumpAndSettle();
-    expect(locationOf(c), '/booking/b1/package');
+    expect(c.read(routerProvider).routerDelegate.currentConfiguration.last.matchedLocation, '/booking/b1/package');
   });
 
   testWidgets('one-to-one escort is accepted for the caregiver after 10 seconds', (tester) async {
@@ -72,7 +72,7 @@ void main() {
     final c = await pumpApp(tester, fakes, at: '/booking/b1/pending', now: now);
     fakes.booking.put(booking(status: BookingStatus.notMatched, caregiverName: null, notMatchedReason: 'helper-declined'));
     await tester.pumpAndSettle();
-    expect(locationOf(c), '/booking/b1/not-found');
+    expect(c.read(routerProvider).routerDelegate.currentConfiguration.last.matchedLocation, '/booking/b1/not-found');
     expect(find.textContaining('Nothing has been charged.'), findsOneWidget);
   });
 

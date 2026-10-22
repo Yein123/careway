@@ -101,7 +101,7 @@ class _DeliveryRequestScreenState extends ConsumerState<DeliveryRequestScreen> {
           'docs': _docs,
           'method': method,
         });
-        router.go('/delivery/$id');
+        router.pushReplacement('/delivery/$id');
       } catch (e) {
         messenger.showSnackBar(SnackBar(content: Text(friendlyError(e))));
       } finally {

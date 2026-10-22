@@ -308,22 +308,7 @@ class _BodyState extends ConsumerState<_Body> {
       if (cancellable) ...[
         const SizedBox(height: 16),
         if (!_confirming)
-          Row(children: [
-            Expanded(
-              child: _Pill(
-                label: 'Reschedule',
-                background: CwColors.lilac,
-                foreground: CwColors.primaryDark,
-                onTap: () {
-                  startBooking(context, ref, level: b.level, patientId: b.patientId);
-                },
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _Pill(label: 'Cancel visit', background: CwColors.white, foreground: const Color(0xFFA02A4C), onTap: () => setState(() => _confirming = true)),
-            ),
-          ])
+          _Pill(label: 'Cancel visit', background: CwColors.white, foreground: const Color(0xFFA02A4C), onTap: () => setState(() => _confirming = true))
         else
           Container(
             padding: const EdgeInsets.all(14),

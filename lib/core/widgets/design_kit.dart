@@ -36,14 +36,21 @@ class DesignScaffold extends StatelessWidget {
         body: SafeArea(
           child: Column(children: [
             Expanded(
-              child: ListView(
-                padding: padding,
-                children: [
-                  for (var i = 0; i < children.length; i++) ...[
-                    if (i > 0) SizedBox(height: gap),
-                    children[i],
-                  ],
-                ],
+              // Not a lazy ListView: forms scrolled off screen keep what was typed.
+              // Tapping outside a field or scrolling closes the keyboard.
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () => FocusScope.of(context).unfocus(),
+                child: SingleChildScrollView(
+                  padding: padding,
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    for (var i = 0; i < children.length; i++) ...[
+                      if (i > 0) SizedBox(height: gap),
+                      children[i],
+                    ],
+                  ]),
+                ),
               ),
             ),
             if (bottom != null) BottomBar(child: bottom!),
