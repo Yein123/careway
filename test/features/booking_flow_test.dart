@@ -99,6 +99,54 @@ void main() {
     });
   }
 
+  // Regression: the patient form used to be dropped once scrolled off screen,
+  // so Next stayed on the page with the details emptied.
+  for (final family in [true, false]) {
+    testWidgets('new patient, then where, date and time through the screen, Next proceeds (${family ? 'someone new' : 'empty family'})', (tester) async {
+      final fakes = guardianFakes(patients: family ? [zainab] : []);
+      final c = await pumpApp(tester, fakes, at: '/book?service=level1', now: now);
+      if (family) {
+        await tester.tap(find.text('Someone new'));
+        await tester.pumpAndSettle();
+      }
+      await tester.enterText(find.byKey(const ValueKey('pf-name')), 'Zainab binti Ahmad');
+      await tester.enterText(find.byKey(const ValueKey('pf-age')), '72');
+      await tester.pumpAndSettle();
+
+      Future<void> choose(String hint, String item) async {
+        final dropdown = find.ancestor(of: find.text(hint), matching: find.byType(DropdownButton<String>));
+        await scrollTo(tester, dropdown);
+        await tester.tap(dropdown);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(item).last);
+        await tester.pumpAndSettle();
+      }
+
+      await choose('Choose a pickup place', 'Elmina Lakeside pickup bay');
+      await choose('Choose a hospital or clinic', 'Hospital Sungai Buloh');
+      await choose('Choose a clinic', 'Orthopaedic specialist clinic');
+      await scrollTo(tester, find.byKey(const ValueKey('day-2026-10-26')));
+      await tester.tap(find.byKey(const ValueKey('day-2026-10-26')));
+      await tester.pumpAndSettle();
+      await scrollTo(tester, find.text('Choose a time'));
+      await tester.tap(find.text('Choose a time'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('slot-${8 * 60}')));
+      await tester.pumpAndSettle();
+
+      // Scrolled all the way down: the typed details are still there.
+      await scrollTo(tester, find.byKey(const ValueKey('pf-name')));
+      expect(find.widgetWithText(TextField, 'Zainab binti Ahmad'), findsOneWidget);
+      expect(find.widgetWithText(TextField, '72'), findsOneWidget);
+
+      await scrollTo(tester, _filled('Next: review visit'));
+      await tester.tap(_filled('Next: review visit'));
+      await tester.pumpAndSettle();
+      expect(fakes.family.saved.single.name, 'Zainab binti Ahmad');
+      expect(c.read(routerProvider).routerDelegate.currentConfiguration.last.matchedLocation, '/book/groups');
+    });
+  }
+
   testWidgets('today is bookable and a past day is disabled', (tester) async {
     final morning = DateTime(2026, 10, 17, 10);
     await pumpApp(tester, guardianFakes(), at: '/book', now: morning);
