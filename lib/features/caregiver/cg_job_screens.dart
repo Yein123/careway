@@ -146,7 +146,21 @@ class CgJobScreen extends ConsumerWidget {
           for (final c in p?.contacts ?? const <Contact>[]) ('${c.name} · ${c.role.toLowerCase()}', c.phone, c.name),
           if ((p?.phone ?? '').isNotEmpty) ('${b.patient.name.split(' ').first} · patient', p!.phone, b.patient.name.split(' ').first),
         ];
+        final (statusLabel, statusTone) = switch (b.status) {
+          BookingStatus.completed => ('Completed', (CwColors.successSoft, CwColors.successDark)),
+          BookingStatus.inProgress => ('In progress', (CwColors.tealSoft, CwColors.tealDark)),
+          BookingStatus.confirmed => ('Confirmed', (CwColors.tealSoft, CwColors.tealDark)),
+          BookingStatus.awaitingPayment => ('Waiting for payment', (CwColors.amberSoft, CwColors.amber)),
+          BookingStatus.cancelled => ('Cancelled', (CwColors.pinkSoft, CwColors.pink)),
+          BookingStatus.expired => ('Expired', (CwColors.pinkSoft, CwColors.pink)),
+          _ => ('Pending', (CgColors.soft, CgColors.muted)),
+        };
         return ListView(padding: const EdgeInsets.fromLTRB(20, 20, 20, 24), children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Tag(statusLabel, background: statusTone.$1, color: statusTone.$2, fontSize: 12, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
+          ),
+          const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(color: CwColors.white, borderRadius: BorderRadius.circular(20)),
@@ -232,7 +246,13 @@ class CgJobScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Text(
-                    active ? 'Booked by ${b.guardianName.isEmpty ? 'the family' : b.guardianName}.' : 'Contacts show once the visit is confirmed.',
+                    switch (b.status) {
+                      _ when active => 'Booked by ${b.guardianName.isEmpty ? 'the family' : b.guardianName}.',
+                      // Patient access ends with the visit (firestore.rules).
+                      BookingStatus.completed => 'Visit completed. Family contacts are hidden after the visit to protect their privacy.',
+                      BookingStatus.cancelled || BookingStatus.expired => 'This visit did not go ahead, so family contacts are not shared.',
+                      _ => 'Contacts show once the visit is confirmed.',
+                    },
                     style: const TextStyle(fontSize: 13, color: CgColors.muted),
                   ),
                 ),

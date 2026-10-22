@@ -98,6 +98,7 @@ class _CgScheduleScreenState extends ConsumerState<CgScheduleScreen> {
               sub: '${d.pharmacyName} · ${d.window}${d.status == DeliveryStatus.delivered ? ' · delivered' : ''}',
               tag: 'Delivery',
               tone: (CwColors.deliverySoft, CwColors.deliveryBlue),
+              onTap: () => _showDelivery(context, d),
             )
           ),
     ]..sort((a, b) => a.$1.compareTo(b.$1));
@@ -170,6 +171,39 @@ class _CgScheduleScreenState extends ConsumerState<CgScheduleScreen> {
     ]);
   }
 }
+
+/// Medicine run details, including runs already delivered.
+void _showDelivery(BuildContext context, MedDelivery d) => showCwSheet<void>(
+      context,
+      builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Expanded(child: Text('Medicine run · ${d.patientName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: CgColors.ink))),
+          const SheetCloseButton(label: 'Close medicine run'),
+        ]),
+        const SizedBox(height: 4),
+        Text(deliveryStageLabels[d.status.wire] ?? d.status.wire, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: CwColors.deliveryBlue)),
+        const SizedBox(height: 14),
+        InfoTable(rows: [
+          if (d.date != null) ('Date', infoValue('${dayLabel(d.date!)} · ${d.window}')),
+          ('Pharmacy', infoValue(d.pharmacyName)),
+          if (d.deliverTo.isNotEmpty) ('Deliver to', infoValue(d.deliverTo)),
+          if (d.routeKm > 0) ('Route', infoValue('${d.routeKm.toStringAsFixed(1)} km')),
+        ]),
+        if (d.steps.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          const Text('Progress', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: CgColors.ink)),
+          const SizedBox(height: 8),
+          for (final s in d.steps)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(children: [
+                SizedBox(width: 72, child: Text(timeLabel(s.at), style: const TextStyle(fontSize: 12, color: CgColors.muted))),
+                Expanded(child: Text(deliveryStageLabels[s.key] ?? s.key, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: CgColors.ink))),
+              ]),
+            ),
+        ],
+      ]),
+    );
 
 class _ViewSwitch extends StatelessWidget {
   const _ViewSwitch({required this.view, required this.onChanged});
