@@ -40,7 +40,7 @@ class _Tab extends StatelessWidget {
 const _title = TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CgColors.ink);
 const _groupLabel = TextStyle(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 0.3, color: CgColors.muted);
 
-enum _ScheduleView { day, week, month }
+enum _ScheduleView { day, month }
 
 DateTime _dayOf(DateTime t) {
   final l = t.toLocal();
@@ -50,7 +50,7 @@ DateTime _dayOf(DateTime t) {
 /// Monday of the week holding [d].
 DateTime _weekStart(DateTime d) => DateTime(d.year, d.month, d.day - (d.weekday - 1));
 
-/// C6 · Caregiver: schedule (CgSchedule.dc.html). Day, week or month view;
+/// C6 · Caregiver: schedule (CgSchedule.dc.html). Day or month view;
 /// tap any date to see its jobs.
 class CgScheduleScreen extends ConsumerStatefulWidget {
   const CgScheduleScreen({super.key});
@@ -60,7 +60,7 @@ class CgScheduleScreen extends ConsumerStatefulWidget {
 }
 
 class _CgScheduleScreenState extends ConsumerState<CgScheduleScreen> {
-  _ScheduleView _view = _ScheduleView.week;
+  _ScheduleView _view = _ScheduleView.day;
   DateTime? _selected;
 
   @override
@@ -107,31 +107,19 @@ class _CgScheduleScreenState extends ConsumerState<CgScheduleScreen> {
       byDay.putIfAbsent(_dayOf(t), () => []).add(w);
     }
 
-    // Days whose jobs are listed below the calendar.
-    final List<DateTime> shownDays;
-    final String period;
-    switch (_view) {
-      case _ScheduleView.day:
-        shownDays = [selected];
-        period = DateFormat('EEE, d MMM yyyy').format(selected);
-      case _ScheduleView.week:
-        final start = _weekStart(selected);
-        shownDays = [for (var i = 0; i < 7; i++) DateTime(start.year, start.month, start.day + i)];
-        final end = shownDays.last;
-        period = '${DateFormat('d MMM').format(start)} – ${DateFormat('d MMM yyyy').format(end)}';
-      case _ScheduleView.month:
-        shownDays = [selected];
-        period = DateFormat('MMMM yyyy').format(selected);
-    }
+    final period = switch (_view) {
+      _ScheduleView.day => DateFormat('EEE, d MMM yyyy').format(selected),
+      _ScheduleView.month => DateFormat('MMMM yyyy').format(selected),
+    };
 
     void select(DateTime d) => setState(() => _selected = d);
     void shift(int dir) => select(switch (_view) {
           _ScheduleView.day => DateTime(selected.year, selected.month, selected.day + dir),
-          _ScheduleView.week => DateTime(selected.year, selected.month, selected.day + 7 * dir),
           _ScheduleView.month => DateTime(selected.year, selected.month + dir, 1),
         });
 
-    final listed = [for (final d in shownDays) if (byDay.containsKey(d)) d];
+    // Jobs for the picked date are listed below the calendar.
+    final listed = [if (byDay.containsKey(selected)) selected];
 
     return _Tab(children: [
       Row(children: [
@@ -165,7 +153,7 @@ class _CgScheduleScreenState extends ConsumerState<CgScheduleScreen> {
             ? EmptyState(
                 icon: Icons.event_available,
                 title: 'Nothing scheduled',
-                message: _view == _ScheduleView.week ? 'No jobs this week.' : 'No jobs on ${DateFormat('EEE d MMM').format(selected)}.',
+                message: 'No jobs on ${DateFormat('EEE d MMM').format(selected)}.',
               )
             : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 for (final day in listed) ...[
@@ -193,7 +181,7 @@ class _ViewSwitch extends StatelessWidget {
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(color: CwColors.white, borderRadius: BorderRadius.circular(14)),
         child: Row(children: [
-          for (final (v, label) in const [(_ScheduleView.day, 'Day'), (_ScheduleView.week, 'Week'), (_ScheduleView.month, 'Month')])
+          for (final (v, label) in const [(_ScheduleView.day, 'Day'), (_ScheduleView.month, 'Month')])
             Expanded(
               child: Semantics(
                 button: true,
