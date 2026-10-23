@@ -8,7 +8,8 @@
   "scripts": {
     "build": "tsc",
     "test": "jest",
-    "test:emu": "firebase emulators:exec --only firestore,auth --project careway-tehwoq \"jest --runInBand\""
+    "test:emu": "firebase emulators:exec --only firestore,auth --project careway-tehwoq \"jest --runInBand\"",
+    "train:fees": "tsc && node scripts/build-market-trips.js && node scripts/train-fee-model.js && tsc"
   },
   "dependencies": {
     "firebase-admin": "^14.5.0",

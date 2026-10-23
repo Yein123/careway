@@ -108,18 +108,18 @@ describeEmu('medicine delivery', () => {
     await expect(requestDeliveryLogic(db, 'g1', delivery({ card: true, ic: false, letter: true }), NOW)).rejects.toEqual(code('docs-missing'));
   });
 
-  test('fee is the distance formula from home to the pharmacy', async () => {
+  test('fee is the route cost model from home to the pharmacy', async () => {
     const r = await requestDeliveryLogic(db, 'g1', delivery(), NOW);
     const d = (await db.doc(`deliveries/${r.deliveryId}`).get()).data()!;
     const pharm = placeById('hsb')!;
     // No saved place → Elmina Lakeside pickup bay.
     const km = routeKm(3.187, 101.518, pharm.lat, pharm.lng);
     expect(d.routeKm).toBe(km);
-    expect(d.fee.totalSen).toBe(deliveryFee(km).totalSen);
+    expect(d.fee).toEqual(deliveryFee(km, APPT));
     expect(d.status).toBe('booked');
     expect(d.caregiverId).toBe('farid');
     expect(d.payment.status).toBe('paid');
-    expect((await db.doc(`receipts/pay-del-${r.deliveryId}`).get()).data()!.amountSen).toBe(deliveryFee(km).totalSen);
+    expect((await db.doc(`receipts/pay-del-${r.deliveryId}`).get()).data()!.amountSen).toBe(deliveryFee(km, APPT).totalSen);
   });
 
   test('no free helper: nothing is created or charged', async () => {

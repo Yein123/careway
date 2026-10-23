@@ -287,6 +287,7 @@ class Booking {
     this.lockAt,
     this.createdAt,
     this.acceptedAt,
+    this.rideSen,
   });
 
   final String id;
@@ -331,6 +332,9 @@ class Booking {
   final DateTime? lockAt;
   final DateTime? createdAt;
   final DateTime? acceptedAt;
+
+  /// Level 2: the private ride both ways, priced by route when requested.
+  final int? rideSen;
 
   List<String> get stepKeys => level == 1 ? groupStepKeys : personalStepKeys;
 
@@ -382,6 +386,7 @@ class Booking {
     lockAt: readDate(m['lockAt']),
     createdAt: readDate(m['createdAt']),
     acceptedAt: readDate(m['acceptedAt']),
+    rideSen: (m['rideSen'] as num?)?.toInt(),
   );
 
   Map<String, dynamic> toMap() => {
@@ -420,6 +425,7 @@ class Booking {
     'lockAt': writeDate(lockAt),
     'createdAt': writeDate(createdAt),
     'acceptedAt': writeDate(acceptedAt),
+    'rideSen': rideSen,
   };
 
   @override

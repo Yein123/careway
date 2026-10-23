@@ -41,6 +41,16 @@ export function deriveRequirements(i: NeedsInput): Requirements {
   return r;
 }
 
+/** Optional skills that suit this patient: ranked higher in matching, never required. */
+export function preferredSkills(p: { conditions?: string; extraHelp?: string[]; mobility?: Mobility }): Skill[] {
+  const out = new Set<Skill>();
+  const text = `${p.conditions ?? ''} ${(p.extraHelp ?? []).join(' ')}`.toLowerCase();
+  if (/dementia|alzheimer|memory|confus/.test(text)) out.add('dementia');
+  if (/translate|forms/.test(text)) out.add('consultSitIn');
+  if (p.mobility === 'stick') out.add('wheelchair');
+  return [...out];
+}
+
 export function level1Allowed(mobility: Mobility, age: number): boolean {
   return mobility !== 'transfer' && age >= 18;
 }

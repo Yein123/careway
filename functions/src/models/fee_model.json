@@ -1,0 +1,54 @@
+{
+  "name": "careway-fee-model",
+  "type": "linear-regression",
+  "target": "trip cost in sen",
+  "features": [
+    "intercept",
+    "km",
+    "km in the peaks (7-10 AM, 5-8 PM)",
+    "km at night (10 PM-6 AM)"
+  ],
+  "timezone": "UTC+8",
+  "trainedOn": "data/market_trips.csv",
+  "trainedAt": "2026-10-23",
+  "models": {
+    "ride": {
+      "weights": {
+        "base": 264,
+        "perKm": 98.81,
+        "perKmPeak": 24.11,
+        "perKmNight": -23.76
+      },
+      "samples": 528,
+      "maeSen": 68,
+      "sources": {
+        "grab-car": [
+          "https://ringgitplus.com/en/blog/en/blog/apps/grab-implements-new-e-hailing-fares-rides-may-cost-more-during-peak-hours.html",
+          "https://www.tomtom.com/traffic-index/kuala-lumpur-traffic"
+        ]
+      }
+    },
+    "delivery": {
+      "weights": {
+        "base": 928.44,
+        "perKm": 118.53,
+        "perKmPeak": 0,
+        "perKmNight": 0
+      },
+      "samples": 1056,
+      "maeSen": 989,
+      "sources": {
+        "lalamove-bike": [
+          "https://blog.easyparcel.com/my/lalamove-rate/",
+          "https://www.lalamove.com/en-my/all-vehicle-pricing-detail",
+          "https://e-mjm.org/2024/v79s5/PP-40.pdf"
+        ],
+        "grabexpress-bike": [
+          "https://ringgitplus.com/en/blog/personal-finance-news/grabexpress-delivery-service-now-available-in-the-greater-klang-valley-area.html",
+          "https://www.lalamove.com/en-my/all-vehicle-pricing-detail",
+          "https://e-mjm.org/2024/v79s5/PP-40.pdf"
+        ]
+      }
+    }
+  }
+}

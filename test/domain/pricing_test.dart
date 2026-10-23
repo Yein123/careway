@@ -1,3 +1,4 @@
+import 'package:careway/domain/fee_model.dart';
 import 'package:careway/domain/pricing.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -28,6 +29,7 @@ void main() {
 
   test('escort estimate is 4 hours plus private ride', () {
     expect(escortEstimateSen(), 14400);
+    expect(escortEstimateSen(rideSen: 2500), 14500);
   });
 
   test('escort final rounds up to 30-minute steps', () {
@@ -36,6 +38,7 @@ void main() {
       3 * 3000 + 1500 + 2400,
     );
     expect(escortFinalSen(const Duration(hours: 3)), 9000 + 2400);
+    expect(escortFinalSen(const Duration(hours: 3), rideSen: 2500), 9000 + 2500);
   });
 
   test('settle worked example: 40/30/22 -> refunds 18/8/0', () {
@@ -108,10 +111,59 @@ void main() {
       expect(routeKm(3.1, 101.5, 3.1, 101.5), 0);
     });
 
-    test('fee is RM 5 base plus RM 0.50 per km', () {
-      final fee = deliveryFee(10.0);
-      expect((fee.baseSen, fee.distanceSen, fee.totalSen), (500, 500, 1000));
-      expect(deliveryFee(0).totalSen, 500);
+    test('fee is the delivery model on the round trip', () {
+      // 11 AM local (03:00 UTC): off peak.
+      final fee = deliveryFee(10.0, DateTime.utc(2026, 10, 26, 3));
+      final w = FeeModel.current.delivery;
+      expect((fee.baseSen, fee.distanceSen, fee.trafficSen), (w.base.round(), (w.perKm * 10).round(), 0));
+      expect(fee.totalSen, fee.baseSen + fee.distanceSen);
+    });
+
+    test('a very short run is topped up to the minimum fee', () {
+      expect(deliveryFee(0, DateTime.utc(2026, 10, 26, 3)).totalSen, minFareSen[TripKind.delivery]);
+    });
+  });
+
+  group('fee model', () {
+    final rideWeights = FeeModel.current.ride;
+
+    test('the app loads the model file the server charges with', () {
+      expect(FeeModel.current.trainedAt, isNotEmpty);
+      expect(FeeModel.current.delivery.perKm, greaterThan(0));
+    });
+
+    // Local (UTC+8) hour h on 26 Oct 2026.
+    DateTime at(int h) => DateTime.utc(2026, 10, 26).add(Duration(hours: h - 8));
+
+    test('local hour is UTC+8', () {
+      expect(mytHour(at(8)), 8);
+      expect(mytHour(at(23)), 23);
+    });
+
+    test('the same ride costs more in the morning peak than at midday or night', () {
+      int leg(int h) => routeCost([RouteLeg(10, at(h))], TripKind.ride).totalSen;
+      expect(leg(8), greaterThan(leg(13)));
+      expect(leg(13), greaterThan(leg(23)));
+    });
+
+    test('each leg is its own trip: two bases, traffic only on the peak leg', () {
+      final c = routeCost([RouteLeg(10, at(8)), RouteLeg(10, at(13))], TripKind.ride);
+      expect(c.km, 20);
+      expect(c.baseSen, 2 * rideWeights.base.round());
+      expect(c.trafficSen, (rideWeights.perKmPeak * 10).round());
+    });
+
+    test('private ride goes an hour before the appointment and back three hours after', () {
+      final km = legKm(3.187, 101.518, 3.2196, 101.5826);
+      final ride = privateRideCost(3.187, 101.518, 3.2196, 101.5826, at(9));
+      final legs = routeCost([RouteLeg(km, at(8)), RouteLeg(km, at(12))], TripKind.ride);
+      expect(ride.totalSen, legs.totalSen);
+    });
+
+    test('predictions match the functions model (same weights, same features)', () {
+      expect(predictSen(rideWeights, 10, 13), closeTo(rideWeights.base + rideWeights.perKm * 10, 1e-9));
+      expect(isPeak(8) && isPeak(18) && !isPeak(13), isTrue);
+      expect(isNight(23) && isNight(5) && !isNight(6), isTrue);
     });
   });
 }

@@ -6,6 +6,7 @@ import '../../core/format.dart';
 import '../../core/icons.dart';
 import '../../core/money.dart';
 import '../../core/theme.dart';
+import '../../config/places.dart';
 import '../../core/widgets/design_kit.dart';
 import '../../domain/pricing.dart';
 import '../home/home_screen.dart' show placeName;
@@ -30,6 +31,12 @@ class _EscortReviewScreenState extends ConsumerState<EscortReviewScreen> {
     final first = patient?.name.split(' ').first ?? 'your family member';
     final appt = draft.apptAt;
     final escort = escortHourlySen * defaultEscortHours.toInt();
+    // The ride is priced by the fee model from this route and the time of day.
+    final hospital = hospitals.where((h) => h.id == draft.hospitalId).firstOrNull;
+    final pickup = draft.pickup;
+    final rideSen = hospital == null || pickup == null || appt == null
+        ? privateRideSen
+        : privateRideCost(pickup.lat, pickup.lng, hospital.lat, hospital.lng, appt).totalSen;
     const sub = TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: CwColors.muted);
     const strong = TextStyle(fontSize: 15, fontWeight: FontWeight.w800);
 
@@ -145,12 +152,12 @@ class _EscortReviewScreenState extends ConsumerState<EscortReviewScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             const Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
               Expanded(child: Text('Estimated price', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800))),
-              Text('Sample prices', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: CwColors.muted)),
+              Text('Ride priced by route', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: CwColors.muted)),
             ]),
             const SizedBox(height: 10),
             for (final (k, v) in [
               ('Escort · RM 30 × est. ${defaultEscortHours.toInt()} hours', formatRm(escort)),
-              ('Private ride, both ways', formatRm(privateRideSen)),
+              ('Private ride, both ways', formatRm(rideSen)),
             ]) ...[
               Row(children: [
                 Expanded(child: Text(k, style: const TextStyle(fontSize: 14, color: CwColors.muted))),
@@ -162,7 +169,7 @@ class _EscortReviewScreenState extends ConsumerState<EscortReviewScreen> {
             const SizedBox(height: 10),
             Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
               const Expanded(child: Text('Estimated total', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800))),
-              Text(formatRm(escortEstimateSen()), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CwColors.tealDark)),
+              Text(formatRm(escortEstimateSen(rideSen: rideSen)), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CwColors.tealDark)),
             ]),
             const SizedBox(height: 10),
             const Text('Charged by actual time. Shorter visit, you get the difference back. We ask you before adding time.',

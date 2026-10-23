@@ -2,6 +2,7 @@ import 'package:careway/core/router.dart';
 import 'package:careway/core/money.dart';
 import 'package:careway/data/models/delivery.dart';
 import 'package:careway/domain/pricing.dart';
+import 'package:careway/features/delivery/delivery_request_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -48,7 +49,7 @@ void main() {
     expect(tester.widget<FilledButton>(find.ancestor(of: find.textContaining('Pay RM'), matching: find.byType(FilledButton))).onPressed, isNotNull);
   });
 
-  testWidgets('fee estimate uses the distance formula, without claiming AI', (tester) async {
+  testWidgets('fee estimate comes from the AI fee model for the route and window', (tester) async {
     await pumpApp(tester, guardianFakes(), at: '/delivery/new', now: now);
     await tester.tap(find.text('Hospital Sungai Buloh'));
     await tester.pump();
@@ -56,9 +57,12 @@ void main() {
     await tester.tap(_filled('Calculate fee'));
     await tester.pump();
     final km = routeKm(3.1885, 101.5165, 3.2196, 101.5826);
-    final fee = deliveryFee(km);
-    expect(find.text('Fee estimate'), findsOneWidget);
-    expect(find.textContaining('AI'), findsNothing);
+    // Default window: tomorrow, first slot.
+    final local = now.toLocal();
+    final start = DateTime(local.year, local.month, local.day + 1).add(Duration(minutes: deliveryWindows[0].$2));
+    final fee = deliveryFee(km, start);
+    expect(find.text('AI fee estimate'), findsOneWidget);
+    expect(find.textContaining('MyUBAT'), findsOneWidget);
     expect(find.text('$km km'), findsOneWidget);
     expect(find.text(formatRm(fee.totalSen)), findsOneWidget);
   });

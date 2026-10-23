@@ -52,6 +52,7 @@ class MedDelivery {
     required this.routeKm,
     required this.baseSen,
     required this.distanceSen,
+    this.trafficSen = 0,
     required this.status,
     this.date,
     this.caregiverId,
@@ -78,6 +79,7 @@ class MedDelivery {
   final double routeKm;
   final int baseSen;
   final int distanceSen;
+  final int trafficSen;
   final DeliveryStatus status;
   final String? caregiverId;
   final String? caregiverName;
@@ -89,7 +91,7 @@ class MedDelivery {
   final Rating? rating;
   final DateTime? createdAt;
 
-  int get totalSen => baseSen + distanceSen;
+  int get totalSen => baseSen + distanceSen + trafficSen;
 
   factory MedDelivery.fromMap(String id, Map<String, dynamic> m) {
     final fee = readMap(m['fee']);
@@ -107,6 +109,7 @@ class MedDelivery {
       routeKm: (m['routeKm'] as num?)?.toDouble() ?? 0,
       baseSen: (fee['baseSen'] as num?)?.toInt() ?? 0,
       distanceSen: (fee['distanceSen'] as num?)?.toInt() ?? 0,
+      trafficSen: (fee['trafficSen'] as num?)?.toInt() ?? 0,
       status: DeliveryStatus.fromWire(
         m['status'] as String? ?? 'pending_caregiver',
       ),
@@ -138,6 +141,7 @@ class MedDelivery {
     'fee': {
       'baseSen': baseSen,
       'distanceSen': distanceSen,
+      'trafficSen': trafficSen,
       'totalSen': totalSen,
     },
     'status': status.wire,

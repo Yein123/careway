@@ -47,6 +47,28 @@ export interface ScoreContext {
   jobsThatDay: Map<string, number>;
   /** Preferred (not required) language. */
   language?: string;
+  /** Personalisation signals for this family and patient (all optional). */
+  personal?: Personalisation;
+}
+
+/** What we know about this family and patient that makes one caregiver a better fit than another. */
+export interface Personalisation {
+  /** Caregiver uid → completed visits with this patient. */
+  patientVisits?: Map<string, number>;
+  /** Caregiver uid → average stars this family gave them. */
+  familyRatings?: Map<string, number>;
+  /** Skills that suit this patient without being required (e.g. dementia care). */
+  preferredSkills?: Skill[];
+  /** Caregiver uid → completed jobs at this hospital or pharmacy. */
+  placeVisits?: Map<string, number>;
+}
+
+/** A family rating at or below this many stars keeps the caregiver out of their matches. */
+export const BLOCK_AT_STARS = 2;
+
+/** Caregivers this family rated poorly; they are not offered this family's jobs again. */
+export function blockedByFamily(p: Personalisation | undefined): Set<string> {
+  return new Set([...(p?.familyRatings ?? new Map<string, number>())].filter(([, s]) => s <= BLOCK_AT_STARS).map(([u]) => u));
 }
 
 const overlaps = (a: Interval, b: Interval) => a.start < b.end && b.start < a.end;
@@ -77,8 +99,26 @@ export function scoreCandidate(c: Caregiver, ctx: ScoreContext): number {
   let s = c.rating;
   if (ctx.language && c.languages.includes(ctx.language)) s += 3;
   if (ctx.patientHistory.has(c.uid)) s += 2;
+  s += personalScore(c, ctx.personal);
   s -= 0.2 * haversineKm(c.home.lat, c.home.lng, ctx.pickup.lat, ctx.pickup.lng);
   s -= 0.5 * (ctx.jobsThatDay.get(c.uid) ?? 0);
+  return s;
+}
+
+/**
+ * Personal fit: repeat visits with this patient (+0.5 each after the first, up to +1),
+ * the family's own ratings (+1 per star above 3), suitable optional skills (+1.5 each),
+ * and familiarity with the place (+0.25 per job, up to +1).
+ */
+export function personalScore(c: Caregiver, p: Personalisation | undefined): number {
+  if (!p) return 0;
+  let s = 0;
+  const visits = p.patientVisits?.get(c.uid) ?? 0;
+  if (visits > 1) s += 0.5 * Math.min(visits - 1, 2);
+  const stars = p.familyRatings?.get(c.uid);
+  if (stars !== undefined) s += stars - 3;
+  s += 1.5 * (p.preferredSkills ?? []).filter((k) => c.skills.includes(k)).length;
+  s += 0.25 * Math.min(p.placeVisits?.get(c.uid) ?? 0, 4);
   return s;
 }
 

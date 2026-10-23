@@ -72,6 +72,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    # The trained fee model, shared with Cloud Functions.
+    - functions/src/models/fee_model.json
 
   fonts:
     - family: PlusJakartaSans

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'domain/fee_model.dart';
 import 'firebase_options.dart';
 
 const useEmulator = bool.fromEnvironment('USE_EMULATOR');
@@ -27,5 +28,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   if (useEmulator) await connectEmulators();
+  await FeeModel.load();
   runApp(const ProviderScope(child: CareWayApp()));
 }

@@ -33,6 +33,8 @@ plus medicine delivered to the doorstep.
 - 👨‍👩‍👧 [Who it is for](#who-it-is-for)
 - 💡 [Our solution](#our-solution)
 - ✨ [What makes it different](#what-makes-it-different)
+- 🧠 [Smart matching and pricing](#smart-matching-and-pricing)
+- 📚 [Sources](#sources)
 - 🛠️ [Tech stack](#tech-stack)
 - 🚀 [Try it (for testing)](#try-it-for-testing)
   - 🔑 [Test accounts](#test-accounts)
@@ -74,8 +76,8 @@ Pick the amount of help the patient actually needs, and pay only for that.
 |:-:|---|---|---|
 | 🚐 | **Group Saver** · Level 1 | **RM 22** / visit | Shared van and a group helper; ride home at the next scheduled return |
 | ⚡ | **Group Flex** · Level 1 | **RM 35** / visit | Shared van and a group helper; ride home as soon as the patient is done |
-| 🤝 | **Personal** · Level 2 | **RM 30** / hour | One-to-one escort, door to door, who stays for the whole visit including the doctor's room |
-| 💊 | **Medicine delivery** | **RM 5** + distance | Any pharmacy or hospital, a pickup window, and live tracking to the doorstep |
+| 🤝 | **Personal** · Level 2 | **RM 30** / hour + ride | One-to-one escort, door to door, who stays for the whole visit including the doctor's room; the private ride is priced by route by our [AI fee model](#smart-matching-and-pricing) |
+| 💊 | **Medicine delivery** | **AI fee estimate** by route | Any pharmacy or hospital, a pickup window, and live tracking to the doorstep; priced from Malaysian courier rates ([how](#smart-matching-and-pricing)) |
 
 **Included in every group visit:** ✅ Pre-registration · ✅ Help at registration · ✅ Queue tracking · ✅ Live family updates
 
@@ -112,11 +114,41 @@ Everyone in the family can book and see each visit.
 <td width="50%" valign="top">
 
 **📍 Medicine delivery**<br />
-A helper brings the medicine home, with live tracking.
+A helper brings the medicine home, with live tracking, at a fee our AI model learned from Malaysian courier prices.
 
 </td>
 </tr>
 </table>
+
+<a id="smart-matching-and-pricing"></a>
+
+## 🧠 Smart matching and pricing
+
+### 🤝 Personalised caregiver matching
+
+Caregivers are matched with a **scoring model**. First, only caregivers who are on duty, nearby, free at that time and hold every skill and valid certificate the patient needs are kept. Each one is then scored for this family and patient: their rating, a shared language, past visits with the patient, the family's own ratings, extra skills that suit the patient (for example dementia care), and familiarity with the hospital. Distance and how busy they are that day lower the score. Caregivers the family rated poorly are left out. The highest score gets the job offer first.
+
+### 💊 AI fee estimate
+
+Medicine delivery and the Level 2 private ride are priced by an **AI fee model**: a linear regression trained on Malaysian courier and e-hailing prices (Grab, Lalamove, GrabExpress) for CareWay's real routes, with TomTom traffic data. It estimates the cost from the route distance and the time of day, so peak-hour trips cost more. The trained model is saved in [`functions/src/models/fee_model.json`](functions/src/models/fee_model.json) and used by both the server and the app.
+
+<a id="sources"></a>
+
+## 📚 Sources
+
+Prices and traffic data used to train the fee model (checked October 2026):
+
+| Data | Figure used | Source |
+|---|---|---|
+| Grab Klang Valley e-hailing | RM 2 base + RM 0.25/km + RM 0.43/min, RM 5 minimum | [RinggitPlus](https://ringgitplus.com/en/blog/en/blog/apps/grab-implements-new-e-hailing-fares-rides-may-cost-more-during-peak-hours.html), [The Star](https://www.thestar.com.my/tech/tech-news/2023/01/16/grab-updates-fee-structure-rides-during-peak-hours-to-cost-more) |
+| Kuala Lumpur traffic (TomTom Traffic Index 2025) | 10 km in 17 min 55 s on average (33.5 km/h); morning rush 28.8 km/h; evening rush 22.9 km/h; free flow about 48.5 km/h | [TomTom Traffic Index](https://www.tomtom.com/traffic-index/kuala-lumpur-traffic) |
+| Lalamove motorcycle | From RM 5 + RM 0.70/km | [EasyParcel](https://blog.easyparcel.com/my/lalamove-rate/) |
+| Lalamove waiting fee | 10 minutes free, then RM 2 per 5 minutes | [Lalamove Malaysia pricing](https://www.lalamove.com/en-my/all-vehicle-pricing-detail) |
+| GrabExpress bike, Klang Valley | RM 1/km up to 20 km, RM 2/km beyond, RM 10 minimum | [RinggitPlus](https://ringgitplus.com/en/blog/personal-finance-news/grabexpress-delivery-service-now-available-in-the-greater-klang-valley-area.html) |
+| Pharmacy waiting time | MOH KPI: 95% of prescriptions within 30 minutes; Hospital Ampang mean 34.8 minutes | [medRxiv](https://www.medrxiv.org/content/10.1101/2022.02.28.22271668.full.pdf), [Medical Journal of Malaysia](https://e-mjm.org/2024/v79s5/PP-40.pdf) |
+| MOH Ubat Melalui Pos (comparison only) | RM 5.70 Peninsula before; free via MyUBAT from 1 Oct 2026 | [Malay Mail](https://www.malaymail.com/news/malaysia/2026/09/30/what-is-ump-how-malaysias-new-free-medicine-delivery-service-works-and-how-to-apply/236993), [MOH Pharmacy](https://pharmacy.moh.gov.my/en/content/ubat-melalui-pos-1malaysia-service.html) |
+
+<sub>The Grab fare structure is from January 2023 and the GrabExpress rates from its 2019 Klang Valley launch, which are the latest public figures we found. Both apps now quote live prices, so retrain the model when newer rate cards or real trip data are available.</sub>
 
 <a id="tech-stack"></a>
 
@@ -126,6 +158,7 @@ A helper brings the medicine home, with live tracking.
 |---|---|
 | 📱 **App** | Flutter: one app for Android and the web, with a family view and a caregiver view |
 | ☁️ **Backend** | Firebase Authentication, Cloud Firestore and Cloud Functions |
+| 🧠 **AI and matching** | Fee model (linear regression trained on Malaysian market prices) and personalised caregiver ranking, both in Cloud Functions |
 | 🔔 **Notifications** | Firebase Cloud Messaging (push notifications on Android) |
 | 🌐 **Hosting** | Firebase Hosting |
 

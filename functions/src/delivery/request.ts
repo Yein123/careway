@@ -1,4 +1,4 @@
-// requestDelivery: repeat-medicine run, fee by distance formula, paid on the spot
+// requestDelivery: repeat-medicine run, fee by the route cost model, paid on the spot
 // (MedRun → MedBooked in the design). The best available helper is assigned at once.
 import { Firestore } from 'firebase-admin/firestore';
 import { HOUR, ts } from '../db';
@@ -43,12 +43,12 @@ export async function requestDeliveryLogic(db: Firestore, uid: string, raw: unkn
     ? { label: `${saved.label} · ${saved.address}`, lat: Number(saved.lat), lng: Number(saved.lng) }
     : { label: PICKUP_POINTS[0].name, lat: PICKUP_POINTS[0].lat, lng: PICKUP_POINTS[0].lng };
   const km = routeKm(home.lat, home.lng, pharmacy.lat, pharmacy.lng);
-  const fee = deliveryFee(km);
+  const fee = deliveryFee(km, start);
 
   const req = deriveRequirements({ level: 1, mobility: 'independent', patientAge: 30, addons: [], delivery: true });
   const window = { start, end: new Date(start.getTime() + 3 * HOUR) };
   const demo = await demoCaregiverUid(db);
-  const ranked = await rankFor(db, req, { apptAt: start, pickup: home, window, familyId: familyId!, patientId: input.patientId });
+  const ranked = await rankFor(db, req, { apptAt: start, pickup: home, window, familyId: familyId!, patientId: input.patientId, placeId: pharmacy.id });
   if (ranked.length === 0) fail('no-caregiver', 'No helper is free in that window. Try another time; nothing was charged.');
 
   const ref = db.collection('deliveries').doc();

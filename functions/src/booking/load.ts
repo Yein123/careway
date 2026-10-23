@@ -1,7 +1,7 @@
 // Loading caregivers and their commitments for matching.
 import { Firestore } from 'firebase-admin/firestore';
 import { HOUR, toDate } from '../db';
-import { Caregiver, Interval } from '../domain/matching';
+import { Caregiver, Interval, Personalisation } from '../domain/matching';
 import { CertType, Skill } from '../domain/needs';
 import { mytDate } from '../places';
 
@@ -78,13 +78,40 @@ export async function loadCommitments(db: Firestore, day: string, excludeGroupId
   return { busy, jobsThatDay };
 }
 
-/** Caregivers who completed a visit for this patient before. */
-export async function loadPatientHistory(db: Firestore, familyId: string, patientId: string): Promise<Set<string>> {
-  const q = await db
-    .collection('bookings')
-    .where('familyId', '==', familyId)
-    .where('patientId', '==', patientId)
-    .where('status', '==', 'completed')
-    .get();
-  return new Set(q.docs.map((d) => d.data().caregiverId).filter(Boolean));
+export interface FamilyHistory {
+  /** Caregivers who completed a visit for this patient before. */
+  patientHistory: Set<string>;
+  personal: Personalisation;
+}
+
+/**
+ * This family's past jobs (bookings and medicine runs): completed visits with the
+ * patient, the family's average rating per caregiver, and who knows [placeId].
+ */
+export async function loadFamilyHistory(db: Firestore, familyId: string, patientId: string, placeId?: string): Promise<FamilyHistory> {
+  const [bookings, deliveries, atPlace] = await Promise.all([
+    db.collection('bookings').where('familyId', '==', familyId).get(),
+    db.collection('deliveries').where('familyId', '==', familyId).get(),
+    placeId
+      ? db.collection('bookings').where('hospitalId', '==', placeId).where('status', '==', 'completed').get()
+      : Promise.resolve(null),
+  ]);
+  const patientVisits = new Map<string, number>();
+  const stars = new Map<string, number[]>();
+  for (const d of [...bookings.docs, ...deliveries.docs]) {
+    const j = d.data();
+    if (!j.caregiverId) continue;
+    if (j.patientId === patientId && (j.status === 'completed' || j.status === 'delivered')) {
+      patientVisits.set(j.caregiverId, (patientVisits.get(j.caregiverId) ?? 0) + 1);
+    }
+    const n = Number(j.rating?.stars ?? 0);
+    if (n >= 1 && n <= 5) stars.set(j.caregiverId, [...(stars.get(j.caregiverId) ?? []), n]);
+  }
+  const familyRatings = new Map([...stars].map(([u, xs]) => [u, xs.reduce((t, x) => t + x, 0) / xs.length]));
+  const placeVisits = new Map<string, number>();
+  for (const d of atPlace?.docs ?? []) {
+    const u = d.data().caregiverId;
+    if (u) placeVisits.set(u, (placeVisits.get(u) ?? 0) + 1);
+  }
+  return { patientHistory: new Set(patientVisits.keys()), personal: { patientVisits, familyRatings, placeVisits } };
 }

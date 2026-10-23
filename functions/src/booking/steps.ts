@@ -45,7 +45,8 @@ export async function advanceStepLogic(db: Firestore, uid: string, raw: unknown,
         // Charged by actual time: refund the difference when shorter than the estimate.
         const started = toDate(steps[0].at)!;
         const minutes = Math.max(30, Math.round((now.getTime() - started.getTime()) / 60_000));
-        const final = escortFinalSen(minutes);
+        const rideSen = b.rideSen ?? PRIVATE_RIDE_SEN;
+        const final = escortFinalSen(minutes, rideSen);
         const refund = Math.max(0, (b.price?.paidSen ?? 0) - final);
         if (refund > 0) {
           update['price.refundSen'] = (b.price?.refundSen ?? 0) + refund;
@@ -56,7 +57,7 @@ export async function advanceStepLogic(db: Firestore, uid: string, raw: unknown,
             deliveryId: null,
             amountSen: refund,
             kind: 'refund',
-            label: `Shorter visit · ${Math.ceil(minutes / 30) / 2} h escort + ride RM ${(PRIVATE_RIDE_SEN / 100).toFixed(2)}`,
+            label: `Shorter visit · ${Math.ceil(minutes / 30) / 2} h escort + ride RM ${(rideSen / 100).toFixed(2)}`,
             method: b.payment?.method ?? '',
             createdAt: ts(now),
           });

@@ -1,9 +1,12 @@
+import 'package:careway/config/places.dart';
+import 'package:careway/core/money.dart';
 import 'package:careway/core/router.dart';
 import 'package:careway/data/api.dart';
 import 'package:careway/data/models/booking.dart';
 import 'package:careway/data/models/family.dart';
 import 'package:careway/data/models/group.dart';
 import 'package:careway/domain/needs.dart';
+import 'package:careway/domain/pricing.dart';
 import 'package:careway/features/booking/booking_draft.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -261,14 +264,19 @@ void main() {
     expect(locationOf(c), '/booking/b-new/pending');
   });
 
-  testWidgets('escort review shows the estimate and requests level 2', (tester) async {
+  testWidgets('escort review prices the ride by route and requests level 2', (tester) async {
     final api = FakeApi();
     final c = await pumpApp(tester, guardianFakes(), at: '/home', now: now, api: api);
     fillDetails(c, 'p1');
     c.read(bookingDraftProvider.notifier).update((d) => d.copyWith(level: 2));
     await _go(tester, c, '/book/escort');
-    await scrollTo(tester, find.text('RM 144.00'));
-    expect(find.text('RM 144.00'), findsOneWidget);
+    final d = c.read(bookingDraftProvider);
+    final hsb = hospitals.firstWhere((h) => h.id == 'hsb');
+    final ride = privateRideCost(d.pickup!.lat, d.pickup!.lng, hsb.lat, hsb.lng, d.apptAt!).totalSen;
+    expect(ride, isNot(privateRideSen));
+    await scrollTo(tester, find.text(formatRm(escortEstimateSen(rideSen: ride))));
+    expect(find.text(formatRm(ride)), findsOneWidget);
+    expect(find.text(formatRm(escortEstimateSen(rideSen: ride))), findsOneWidget);
     await scrollTo(tester, _filled('Find my escort'));
     await tester.tap(_filled('Find my escort'));
     await tester.pumpAndSettle();

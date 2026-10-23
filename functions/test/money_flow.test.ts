@@ -4,6 +4,8 @@ import { payBookingLogic } from '../src/booking/pay';
 import { cancelBookingLogic } from '../src/booking/cancel';
 import { lockGroupsLogic, lockGroupTx } from '../src/booking/lock';
 import { toDate } from '../src/db';
+import { privateRideCost } from '../src/domain/pricing';
+import { placeById } from '../src/places';
 import {
   APPT, bookingOf, clearDb, describeEmu, ELMINA, HOUR, MIN, NOW, offersFor, seedCaregiver, seedFamily, seedGroup, testDb,
 } from './helpers';
@@ -117,12 +119,16 @@ describeEmu('payment, cancellation and settlement', () => {
     expect(b.addons).toEqual(['language', 'consultSitIn']);
   });
 
-  test('level 2 pays the escort estimate', async () => {
+  test('level 2 pays the escort estimate plus the ride priced by route', async () => {
     await seedCaregiver(db, 'nurul');
     const r = await requestBookingLogic(db, 'g1', base('p1', 2), NOW);
+    const b = (await db.doc(`bookings/${r.bookingId}`).get()).data()!;
+    const ride = privateRideCost(b.pickup, placeById(b.hospitalId)!, b.apptAt.toDate());
+    expect(b.rideSen).toBe(ride.totalSen);
+    expect(b.ride).toEqual({ km: ride.km });
     await acceptLatest(r.bookingId);
     const paid = await payBookingLogic(db, 'g1', { bookingId: r.bookingId, method: 'tng' }, NOW);
-    expect(paid.paidSen).toBe(14400);
+    expect(paid.paidSen).toBe(12000 + ride.totalSen);
   });
 
   test('lock settles worked example: 40/30/22 -> refunds 18/8/0', async () => {

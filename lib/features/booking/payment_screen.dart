@@ -159,7 +159,7 @@ class _BodyState extends ConsumerState<_Body> {
     } else {
       lines = [
         ('Escort · RM 30 × est. ${defaultEscortHours.toInt()} hours', escortHourlySen * defaultEscortHours.toInt()),
-        ('Private ride, both ways', privateRideSen),
+        ('Private ride, both ways', b.rideSen ?? privateRideSen),
       ];
     }
     final total = lines.fold(0, (t, l) => t + l.$2);

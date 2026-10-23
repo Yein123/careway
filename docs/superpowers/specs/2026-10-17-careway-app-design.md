@@ -13,14 +13,14 @@ CareWay helps families in Sime Darby Property townships (Elmina, Denai Alam, Sha
 - Auth: **email + password** (phone kept as profile data).
 - Caregivers are **matched by skill and certificate** and must **accept** each patient (group or personal) → caregiver pending status.
 - Level 1 group pricing: **pay at confirm at current group-size price, settle (refund the difference) once when the group locks 24h before pickup.**
-- Medicine delivery fee: **formula only for now** (distance-based, no AI). The fee estimator sits behind an interface so an AI adjustment can be added later.
+- Medicine delivery fee and the Level 2 private ride: priced by a **fee model** (linear regression on route km, peak and night km) trained on Malaysian market prices; see `functions/src/models/fee_model.json` and README § Smart matching and pricing.
 
 ### Assumptions
 - Payments (FPX, Touch 'n Go, DuitNow QR, card) are **simulated**: choosing a method and tapping Pay marks the payment `paid` after a short delay. Refunds are recorded, not executed.
 - Notifications are **in-app** (Firestore). No push (FCM) in this build.
 - Distances use **coordinates of known places** (seeded hospitals, pharmacies, pickup points, saved home places) and haversine × 1.3 road factor. No Maps API.
 - Caregiver certificate verification is done by an admin flag set in seed data / Firestore console; there is no admin UI in this build.
-- Copy labelled "AI fee estimate" in the design is shown as "Fee estimate" so the UI does not claim AI it doesn't use.
+- Copy labelled "AI fee estimate" in the design is shown as designed: the fee comes from the trained fee model.
 - Prices are sample values in a single config file.
 
 ### Out of scope
@@ -90,7 +90,7 @@ Level 1 package and add-ons are chosen after the group helper accepts (design or
 
 ### Matching (`functions: matchCaregivers`)
 1. **Hard filter:** all required skills; all required certs `verified` and `expiresAt` after the appointment; `onDuty`; zone matches; no schedule overlap with accepted bookings or open offers (appointment ±3h window for Level 2, group trip window for Level 1).
-2. **Score** (higher first): language match +3, served this patient before +2, rating ×1, distance to pickup −0.2/km, accepted jobs that day −0.5 each.
+2. **Score** (higher first): language match +3, served this patient before +2, rating ×1, distance to pickup −0.2/km, accepted jobs that day −0.5 each. **Personalisation:** repeat visits with the patient +0.5 each after the first (max +1), the family's average rating of the caregiver +1 per star above 3, optional skills suiting the patient (dementia, consult sit-in, wheelchair) +1.5 each, past jobs at the place +0.25 each (max +1). Caregivers the family rated ≤ 2 stars are excluded.
 3. **Sequential offers:** offer to rank 1 with an 18-minute expiry. Decline or expiry → next candidate. List exhausted → booking `not_matched`, guardian notified, nothing charged.
 4. `expireOffers` scheduled function runs every minute.
 
@@ -129,7 +129,7 @@ Level 2: escort RM 30/hour × estimated hours (default 4) + private ride both wa
 Form a new group (rider 1, RM 40 cap, rides even if alone) · Switch to Level 2 escort · Tell me if a seat opens (waitlist) · Decide later (booking stays `draft`). If a new group also gets no caregiver, show "No caregiver available" with Level 2 suggested.
 
 ### Medicine delivery fee (formula)
-`routeKm = 2 × haversine(home, pharmacy) × 1.3`, rounded to 0.1 km; `fee = RM 5.00 base + RM 0.50 × routeKm`. Computed by a `FeeEstimator` interface (`FormulaFeeEstimator` now). Delivery requires all 3 documents ticked (appointment card, IC copy, authorisation letter) and goes through caregiver matching (skill `medicineCollection`) before payment, like a booking.
+`routeKm = 2 × haversine(home, pharmacy) × 1.3`, rounded to 0.1 km; the fee is the trained fee model's estimate for that km at the window's start hour (minimum RM 15). The Level 2 private ride uses the same model on the two one-way legs (an hour before the appointment, three hours after), stored on the booking as `rideSen`. Delivery requires all 3 documents ticked (appointment card, IC copy, authorisation letter) and goes through caregiver matching (skill `medicineCollection`) before payment, like a booking.
 
 ## 6. Screens (design artboard → Flutter route)
 

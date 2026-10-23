@@ -76,7 +76,7 @@ export async function payBookingLogic(db: Firestore, uid: string, raw: unknown, 
     } else {
       lines = [
         { label: `Escort · RM 30 × est. ${DEFAULT_ESCORT_HOURS} hours`, sen: ESCORT_HOURLY_SEN * DEFAULT_ESCORT_HOURS },
-        { label: 'Private ride, both ways', sen: PRIVATE_RIDE_SEN },
+        { label: 'Private ride, both ways', sen: b.rideSen ?? PRIVATE_RIDE_SEN },
       ];
     }
     const paidSen = lines.reduce((t, l) => t + l.sen, 0);

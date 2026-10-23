@@ -2,11 +2,11 @@
 import { Firestore } from 'firebase-admin/firestore';
 import { HOUR, MINUTE, toDate, ts } from '../db';
 import { fail } from '../errors';
-import { filterCandidates, qualifies, rankCandidates } from '../domain/matching';
-import { deriveRequirements, level1Allowed, Mobility, needLabels, Requirements } from '../domain/needs';
-import { ESCORT_HOURLY_SEN, DEFAULT_ESCORT_HOURS, GROUP_CAPACITY, groupShareSen } from '../domain/pricing';
+import { blockedByFamily, filterCandidates, qualifies, rankCandidates } from '../domain/matching';
+import { deriveRequirements, level1Allowed, Mobility, needLabels, preferredSkills, Requirements, Skill } from '../domain/needs';
+import { ESCORT_HOURLY_SEN, DEFAULT_ESCORT_HOURS, GROUP_CAPACITY, groupShareSen, privateRideCost } from '../domain/pricing';
 import { mytDate, mytTime, placeById } from '../places';
-import { demoCaregiverUid, jobWindow, loadCaregivers, loadCommitments, loadPatientHistory, caregiverFromDoc } from './load';
+import { demoCaregiverUid, jobWindow, loadCaregivers, loadCommitments, loadFamilyHistory, caregiverFromDoc } from './load';
 import { offerNext, OFFER_TTL_MS } from './offers';
 
 export interface RequestInput {
@@ -147,9 +147,20 @@ export async function requestBookingLogic(
     estimateSen = groupShareSen('saver', 1);
   }
 
+  // Level 2 rides alone, priced by its own route and time of day.
+  const ride = input.level === 2 ? privateRideCost(pickup, hospital, apptAt) : null;
   const bookingLockAt = pickupAt ? groupLockAt(pickupAt, now) : null;
   const window = jobWindow(apptAt, pickupAt);
-  const ranked = await rankFor(db, req, { apptAt, pickup, window, familyId, patientId: input.patientId, language: input.language });
+  const ranked = await rankFor(db, req, {
+    apptAt,
+    pickup,
+    window,
+    familyId,
+    patientId: input.patientId,
+    language: input.language,
+    placeId: hospital.id,
+    preferredSkills: preferredSkills({ conditions: patient.conditions, extraHelp: patient.extraHelp, mobility }),
+  });
   await bookingRef.set({
     ...base,
     pickup,
@@ -159,6 +170,8 @@ export async function requestBookingLogic(
     status: 'pending_caregiver',
     offerKind,
     estimateSen,
+    rideSen: ride?.totalSen ?? null,
+    ride: ride ? { km: ride.km } : null,
     windowStart: ts(window.start),
     windowEnd: ts(window.end),
     rankedUids: ranked,
@@ -170,21 +183,35 @@ export async function requestBookingLogic(
 export async function rankFor(
   db: Firestore,
   req: Requirements,
-  o: { apptAt: Date; pickup: { lat: number; lng: number }; window: { start: Date; end: Date }; familyId: string; patientId: string; language?: string },
+  o: {
+    apptAt: Date;
+    pickup: { lat: number; lng: number };
+    window: { start: Date; end: Date };
+    familyId: string;
+    patientId: string;
+    language?: string;
+    /** Hospital or pharmacy id, for place familiarity. */
+    placeId?: string;
+    preferredSkills?: Skill[];
+  },
 ): Promise<string[]> {
   const demo = await demoCaregiverUid(db);
   if (demo) return [demo];
   const [cgs, commitments, history] = await Promise.all([
     loadCaregivers(db),
     loadCommitments(db, mytDate(o.apptAt)),
-    loadPatientHistory(db, o.familyId, o.patientId),
+    loadFamilyHistory(db, o.familyId, o.patientId, o.placeId),
   ]);
-  const eligible = filterCandidates(cgs, req, { apptAt: o.apptAt, pickup: o.pickup, window: o.window, busy: commitments.busy });
+  const personal = { ...history.personal, preferredSkills: o.preferredSkills ?? [] };
+  const blocked = blockedByFamily(personal);
+  const eligible = filterCandidates(cgs, req, { apptAt: o.apptAt, pickup: o.pickup, window: o.window, busy: commitments.busy })
+    .filter((c) => !blocked.has(c.uid));
   return rankCandidates(eligible, {
     pickup: o.pickup,
-    patientHistory: history,
+    patientHistory: history.patientHistory,
     jobsThatDay: commitments.jobsThatDay,
     language: o.language,
+    personal,
   });
 }
 

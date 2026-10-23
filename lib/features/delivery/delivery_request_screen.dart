@@ -26,8 +26,8 @@ const _blue = CwColors.deliveryBlue;
 const _blueTint = Color(0xFFEEF3FB);
 const _blueLine = Color(0xFFD6E2F3);
 
-/// 31 · Medicine delivery: request + fee (MedRun.dc.html). The fee is the
-/// distance formula (spec §5); no AI is involved.
+/// 31 · Medicine delivery: request + fee (MedRun.dc.html). The fee comes from
+/// the fee model trained on Malaysian courier prices (domain/fee_model.dart).
 class DeliveryRequestScreen extends ConsumerStatefulWidget {
   const DeliveryRequestScreen({super.key});
 
@@ -80,11 +80,11 @@ class _DeliveryRequestScreenState extends ConsumerState<DeliveryRequestScreen> {
     final homeLat = saved?.lat ?? pickupPoints.first.lat;
     final homeLng = saved?.lng ?? pickupPoints.first.lng;
     final pharmacy = pharmacies.where((p) => p.id == _pharmacyId).firstOrNull;
-    final km = pharmacy == null ? null : routeKm(homeLat, homeLng, pharmacy.lat, pharmacy.lng);
-    final fee = km == null ? null : deliveryFee(km);
     final ready = _docs.values.every((v) => v);
     final day = DateTime(now.year, now.month, now.day + _dayOffset);
     final windowStart = day.add(Duration(minutes: deliveryWindows[_window].$2));
+    final km = pharmacy == null ? null : routeKm(homeLat, homeLng, pharmacy.lat, pharmacy.lng);
+    final fee = km == null ? null : deliveryFee(km, windowStart);
     final canSubmit = patient != null && pharmacy != null && _calced && ready;
     final method = user?.paymentMethods.firstOrNull?.type ?? 'fpx';
 
@@ -299,9 +299,9 @@ class _DeliveryRequestScreenState extends ConsumerState<DeliveryRequestScreen> {
                       const SizedBox(width: 8),
                       const Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text('Fee estimate', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                          Text('AI fee estimate', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
                           SizedBox(height: 1),
-                          Text('Based on the route distance', style: TextStyle(fontSize: 11, color: CwColors.muted)),
+                          Text('AI model trained on Malaysian courier prices', style: TextStyle(fontSize: 11, color: CwColors.muted)),
                         ]),
                       ),
                     ]),
@@ -325,6 +325,7 @@ class _DeliveryRequestScreenState extends ConsumerState<DeliveryRequestScreen> {
                       _FeeRow('Route: home → pharmacy → home', '$km km'),
                       _FeeRow('Base fee', formatRm(fee.baseSen)),
                       _FeeRow('Distance fee', formatRm(fee.distanceSen)),
+                      if (fee.trafficSen != 0) _FeeRow('Traffic at this time', formatRm(fee.trafficSen)),
                       Padding(
                         padding: const EdgeInsets.only(top: 10, bottom: 2),
                         child: Row(children: [
@@ -332,12 +333,17 @@ class _DeliveryRequestScreenState extends ConsumerState<DeliveryRequestScreen> {
                           Text(formatRm(fee.totalSen), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: _blue)),
                         ]),
                       ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Includes waiting at the pharmacy counter. Eligible repeat medicines can also be posted free through MyUBAT, which takes a few days.',
+                        style: TextStyle(fontSize: 11, height: 1.4, color: CwColors.muted),
+                      ),
                     ],
                   ]),
                 ),
                 const SizedBox(height: 14),
                 const Text(
-                  'Free cancellation up to 24 hours before. Medicine is handed over with a signature. Sample prices.',
+                  'Free cancellation up to 24 hours before. Medicine is handed over with a signature.',
                   style: TextStyle(fontSize: 11, height: 1.45, color: CwColors.muted),
                 ),
               ],
